@@ -14,5 +14,5 @@ setup(name='shape_learning',
       package_dir = {'': 'src'},
       packages=['shape_learning'],
       data_files=[('share/shape_learning/letter_model_datasets/uji_pen_chars2', glob.glob("share/letter_model_datasets/uji_pen_chars2/*")),
-                  ('share/doc/shape_learning', ['AUTHORS', 'LICENSE', 'README'])]
+                  ('share/doc/shape_learning', ['AUTHORS', 'LICENSE', 'README.md'])]
       )

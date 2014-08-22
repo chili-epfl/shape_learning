@@ -7,7 +7,6 @@ from shape_learning.shape_modeler import ShapeModeler #for normaliseShapeHeight(
 
 import numpy
 import matplotlib.pyplot as plt
-import time
 
 from kivy.config import Config
 Config.set('kivy', 'logger_enable', 0)
@@ -20,7 +19,7 @@ from kivy.graphics import Color, Ellipse, Line
 from scipy import interpolate
 
 import argparse
-parser = argparse.ArgumentParser(description='Display letter');
+parser = argparse.ArgumentParser(description='Learn a collection of letters in parallel');
 parser.add_argument('word', action="store",
                 help='The word to be learnt');
 

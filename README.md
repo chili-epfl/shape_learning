@@ -11,7 +11,7 @@ The `ShapeLearner` class manages the learning of the parameters of a particular 
 
 The `ShapeLearnerManager` class manages collections of multiple `ShapeLearner`s. For example, in the context of learning words, the `ShapeLearnerManager` keeps track of the current word being learnt and its associated `ShapeLearner`s, in addition to the information on each letter/word which has been previously seen. This allows for long-term system memory, even when the shapes are not always part of the active collection.
 
-A sample application is provided in `scripts/learning_letters.py` (additional dependency of Kivy). To run it, execute:
+A sample application using of learning words, with letter instances from the UJI pen charaters 2 dataset, is provided in `scripts/learning_letters.py` (additional dependency of Kivy). To run it, execute:
 ```
-python scripts/learning_letters.py 'case'
+python learning_letters.py 'case'
 ```

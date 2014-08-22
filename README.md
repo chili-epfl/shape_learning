@@ -11,6 +11,7 @@ A GUI to visualise the effect of varying parameters of the shape model is provid
 ```
 python shape_model_gui.py 'd' 5
 ```
+![GUI screenshot of letter 'd'](https://raw.github.com/dhood/shape_learning/tree/master/doc/gui_d_params1.png)
 
 The `ShapeLearner` class manages the learning of the parameters of a particular `ShapeModeler` attribute. The parameters of user-demonstrated shapes may be determined from the model, and used to update the learned parameters of the system.
 

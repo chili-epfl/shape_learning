@@ -15,7 +15,7 @@ from recordtype import recordtype #for mutable namedtuple (dict might also work)
 boundExpandingAmount = 0.;
 usePrevParamsWhenShapeReappears = True;
 
-Shape = recordtype('Shape',['path', 'shapeID', 'shapeType', 'shapeType_code', 'paramsToVary', 'paramValues']);
+Shape = recordtype('Shape',[('path', None), ('shapeID', None), ('shapeType', None), ('shapeType_code', None), ('paramsToVary', None), ('paramValues', None)]);
 
 ###--------------------------------------------- WORD LEARNING FUNCTIONS
 class ShapeLearnerManager:

@@ -70,7 +70,7 @@ def preparePlot(shapeModeler):
 
 def prepareShapeModel(datasetDirectory, shape):
     import glob
-    datasetFiles_shape = glob.glob(datasetDirectory + '/'+shape+'*.txt');
+    datasetFiles_shape = glob.glob(datasetDirectory + '/'+shape+'.dat');
     if(len(datasetFiles_shape)<1):
         raise Exception("Dataset not available at " + datasetDirectory + " for shape " + shape);
     shapeModeler = ShapeModeler();

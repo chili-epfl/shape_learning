@@ -64,7 +64,7 @@ if __name__ == "__main__":
 
         shape = shapes[k].meanShape
 
-        plt.subplot(5, len(shapes)/5 + 1, n)
+        plt.subplot(5, len(shapes)/5 + 1, n+1)
 
         numPointsInShape = len(shape)/2
         x_shape = shape[0:numPointsInShape]

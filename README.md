@@ -1,6 +1,9 @@
 `shape_learning` is a library for simultaneously learning multiple shape models
 based on user input, such as demonstrations.
 
+Initial models for over 100 symbols (mostly letters) [are
+provided](https://github.com/chili-epfl/shape_learning/tree/master/share/letter_model_datasets/uji_pen_chars2).
+
 Overview
 ========
 
@@ -96,8 +99,7 @@ database.
 Run:
 
 ```
-python ./tools/dataset-preprocessing/parseDataset.py <path to ujipenchar2.txt>
-<dest path>
+python ./tools/dataset-preprocessing/parseDataset.py <path to ujipenchar2.txt> <dest path>
 ```
 
 to parse, interpolate, normalize, and cluster the letters present in the

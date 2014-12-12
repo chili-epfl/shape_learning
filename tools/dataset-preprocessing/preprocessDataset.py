@@ -1,6 +1,9 @@
 import numpy
 from scipy import interpolate
+#from scipy.cluster.vq import vq, kmeans, whiten
+from sklearn.cluster import MeanShift
 
+MIN_CLUSTER_SIZE = 8
 NB_POINTS=70
 
 def interpolate_shape(shape,numDesiredPoints):
@@ -54,6 +57,28 @@ def normalize(shape):
     newShape[numPointsInShape:] = y_shape
     return newShape
 
+def cluster(samples):
+
+    samples = numpy.array(samples)
+
+    # clustering with k-Means
+    #nb_clusters = 3
+    #clusters, distortion = kmeans(whitened, nb_clusters)
+
+    # clustering with mean-shift
+    # http://scikit-learn.org/stable/modules/generated/sklearn.cluster.MeanShift.html
+    ms = MeanShift(bandwidth=1.90) # bandwidth manually estimated once with estimate_bandwidth
+    ms.fit(samples)
+    cluster_centers = ms.cluster_centers_
+    labels = ms.labels_
+
+    clusters = [list() for _ in range(len(cluster_centers))]
+
+    for i, label in enumerate(labels):
+        clusters[label].append(samples[i])
+    
+    return [cluster for cluster in clusters if len(cluster) >= MIN_CLUSTER_SIZE]
+
 def preprocess(dataset):
     """ Pre-process the dataset to:
         - interpolate the sample so that they all have the same length
@@ -61,12 +86,16 @@ def preprocess(dataset):
         - normalize the coordinates so that max dimension = 1
         - translate the shape so that the center is at (0,0)
         - returns it as a numpy array
+        - cluster the samples into different allographs
     """
     sample_dict = {}
+    clustered_dict = {}
     i = 0
     for char, samples in dataset.items():
         i += 1
-        print("%.2f%% -- Pre-processing %d samples of <%s>..." % (float(i)/len(dataset) * 100, len(samples), char))
+        print("%.2f%% -- Interpolation and norlization of %d samples of <%s>..." % (float(i)/len(dataset) * 100, len(samples), char))
+
+        #if char != "S": continue
 
         for sample in samples:
             if len(sample) > 1:
@@ -78,7 +107,18 @@ def preprocess(dataset):
             if norm_shape is not None:
                 sample_dict.setdefault(char,[]).append(norm_shape)
 
-    return sample_dict
+    print("Done.\n\nClustering...")
+
+    for k, v in sample_dict.items():
+        clusters = cluster(v)
+        print("Found %s clusters for <%s>" % (len(clusters), k))
+        if len(clusters) in [0, 1]:
+            clustered_dict[k] = v
+        else:
+            for i, c in enumerate(clusters):
+                clustered_dict[k + str(i)] = c
+
+    return clustered_dict
 
 
 

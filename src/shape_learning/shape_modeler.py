@@ -131,8 +131,14 @@ class ShapeModeler:
         error = sum(diff)/(self.numPointsInShapes*2)
         return params, error
 
+    def normaliseMeanShapeHeight(self):
+        self.meanShape = ShapeModeler.normaliseShapeHeight(self.meanShape)
+
+    def showMeanShape(self, block=True):
+        ShapeModeler.showShape(ShapeModeler.normaliseShape(self.meanShape), block)
+
     @staticmethod
-    def showShape(shape):
+    def showShape(shape, block = False):
         """ Show shape with random colour
         """
         numPointsInShape = len(shape)/2
@@ -141,7 +147,7 @@ class ShapeModeler:
 
         plt.plot(x_shape, -y_shape, c=numpy.random.rand(3,1))
         plt.axis([-1, 1, -1, 1])
-        plt.draw();#show(block=False)
+        plt.show(block=block) # block=False <-> plt.draw
 
     @staticmethod
     def normaliseShape(shape):
@@ -220,5 +226,3 @@ class ShapeModeler:
         shape = ShapeModeler.normaliseShape(shape)
         ShapeModeler.showShape(shape)
 
-    def normaliseMeanShapeHeight(self):
-        self.meanShape = ShapeModeler.normaliseShapeHeight(self.meanShape)

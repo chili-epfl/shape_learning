@@ -12,22 +12,16 @@ def parse(dataset):
 
     with codecs.open(dataset,'r', encoding="utf8") as dataset:
         current_char = ''
-        remaining_strokes = 0
         current_shape = []
+        remaining_strokes = 1
         for l in dataset.readlines():
             letter = letter_re.search(l)
             if letter:
-
                 current_char = letter.group('char')
                 continue
 
             strokes = strokes_re.search(l)
             if strokes:
-                # if we already parsed one letter, add it to the shape dictionary
-                if current_shape:
-                    shapes.setdefault(current_char,[]).append(current_shape)
-                    current_shape = []
-
                 remaining_strokes = int(strokes.group('nb'))
                 continue
 
@@ -37,6 +31,11 @@ def parse(dataset):
                     raise RuntimeError("I should not find points! No stroke is missing")
                 remaining_strokes -= 1
                 current_shape.append(map(int,points.group("coords").split()))
+
+                if remaining_strokes == 0:
+                    shapes.setdefault(current_char,[]).append(current_shape)
+                    current_shape = []
+
 
     return shapes
 

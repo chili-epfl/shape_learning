@@ -1,3 +1,4 @@
+import itertools
 import numpy
 from scipy import interpolate
 #from scipy.cluster.vq import vq, kmeans, whiten
@@ -98,11 +99,13 @@ def preprocess(dataset):
         #if char != "S": continue
 
         for sample in samples:
-            if len(sample) > 1:
-                # more than one stroke: ignore it for now
-                continue
+            sample = list(itertools.chain(*sample))
+            #if len(sample) > 1:
+            #    # more than one stroke: ignore it for now
+            #    continue
 
-            shape = interpolate_shape(sample[0], NB_POINTS)
+            #shape = interpolate_shape(sample[0], NB_POINTS)
+            shape = interpolate_shape(sample, NB_POINTS)
             norm_shape = normalize(shape)
             if norm_shape is not None:
                 sample_dict.setdefault(char,[]).append(norm_shape)

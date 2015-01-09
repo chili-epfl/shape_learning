@@ -100,7 +100,7 @@ if __name__ == "__main__":
 
             plt.plot(x_shape, -y_shape, c='r')
             
-        plt.title(k)
+        plt.title("%s (%d samples)" % (k, shapes[k].numShapesInDataset ))
         frame1 = plt.gca()
         frame1.axes.get_xaxis().set_visible(False)
         frame1.axes.get_yaxis().set_visible(False)

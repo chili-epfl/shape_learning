@@ -147,7 +147,10 @@ class ShapeModeler:
 
         plt.plot(x_shape, -y_shape, c=numpy.random.rand(3,1))
         plt.axis([-1, 1, -1, 1])
-        plt.show(block=block) # block=False <-> plt.draw
+        if block:
+            plt.show(block=block) # block=False <-> plt.draw
+        else:
+            plt.draw()
 
     @staticmethod
     def normaliseShape(shape):
@@ -220,9 +223,9 @@ class ShapeModeler:
         return newShape
 
     @staticmethod
-    def normaliseAndShowShape(shape):
+    def normaliseAndShowShape(shape, block=False):
         """ Normalise shape so that max dimension is 1 and then show
         """
         shape = ShapeModeler.normaliseShape(shape)
-        ShapeModeler.showShape(shape)
+        ShapeModeler.showShape(shape, block)
 

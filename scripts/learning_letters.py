@@ -5,6 +5,54 @@ from shape_learning.shape_learner_manager import ShapeLearnerManager
 from shape_learning.shape_learner import SettingsStruct
 from shape_learning.shape_modeler import ShapeModeler #for normaliseShapeHeight()
 
+# Mapping of letter to their writing style (when several available in dataset)
+styleMap = {
+'a':'a2',
+'b':'b1', # cursive style
+'d':'d1',
+'g':'g1',
+'h':'h1',
+'k':'k1',
+'l':'l1',
+'n':'n1',
+'o':'o1',
+'p':'p1',
+'r':'r1',
+'s':'s1',
+'u':'u1',
+'v':'v1'
+}
+
+# Mapping between letters and adquate nb of principal components and initial eigen values
+eigenValuesMap = {
+'a':[ 0.8 , 6 ],
+'b':[ 0.0 , 2 ],
+'c':[ 0.0 , 4 ],
+'d':[ 0.0 , 2 ],
+'e':[ 0.0 , 3 ],
+'f':[ 0.0 , 2 ],
+'g':[ 0.0 , 2 ],
+'h':[ 0.0 , 2 ],
+'i':[ 0.0 , 2 ],
+'j':[ 0.0 , 2 ],
+'k':[ 0.0 , 2 ],
+'l':[ 0.0 , 2 ],
+'m':[-0.5 , 6 ],
+'n':[ 0.0 , 7 ],
+'o':[ 0.0 , 4 ],
+'p':[ 0.0 , 2 ],
+'q':[ 0.0 , 2 ],
+'r':[ 0.0 , 1 ],
+'s':[ 0.0 , 2 ],
+'t':[ 0.0 , 2 ],
+'u':[ 0.0 , 3 ],
+'v':[ 0.0 , 6 ],
+'w':[ 0.0 , 2 ],
+'x':[ 0.0 , 2 ],
+'y':[ 0.0 , 2 ],
+'z':[ 0.0 , 2 ]
+}
+
 import numpy
 import matplotlib.pyplot as plt
 
@@ -83,15 +131,46 @@ class MyPaintWidget(Widget):
         userShape = downsampleShape(userShape,numPoints_shapeModeler,xyxyFormat=True)
 
         shapeCentre = ShapeModeler.getShapeCentre(userShape)
+        
         for i in range(len(wordToLearn)):
             if(shapeCentre[0] > (self.width/len(wordToLearn))*i):
                 shapeIndex_demoFor = i
 
         shapeType = wordManager.shapeAtIndexInCurrentCollection(shapeIndex_demoFor)
+            
         print('Received demo for letter ' + shapeType)
 
         userShape = numpy.reshape(userShape, (-1, 1)); #explicitly make it 2D array with only one column
         userShape = ShapeModeler.normaliseShapeHeight(numpy.array(userShape))
+        
+        #------------This is to add the user's drawing to the data base:
+        dataShape = ''
+        for x in userShape:
+            dataShape += ('%f'%x[0] + ' ')
+        dataShape += '\n'
+        
+        if shapeType not in eigenValuesMap:
+            raise RuntimeError("Dataset is not known for shape "+ shapeType)
+        else:
+            if shapeType in styleMap:
+                shapeType = styleMap[shapeType]
+            datasetFile = datasetDirectory + '/' + shapeType + '.dat'
+            
+            with open(datasetFile, 'rb') as f:
+                l = f.readlines()[0]
+                numExemples = (int)(l)
+                l = '%i\n' % (numExemples+1)
+                newData = l
+            with open(datasetFile, 'rb') as f:
+                ind = 0
+                for l in f.readlines():
+                    if ind>0:
+                        newData = newData + l
+                    ind+=1
+            with open(datasetFile, 'wb') as f:
+                f.write(newData)
+                f.write(dataShape)
+        #---------------------------------------------------------------
 
         shape = wordManager.respondToDemonstration(shapeIndex_demoFor, userShape)
 
@@ -110,6 +189,7 @@ class UserInputCapture(App):
             print(self.painter.width)
             Color(1, 1, 0)
             d = 30.
+            
             for i in range(len(wordToLearn)-1):
                 x = (self.painter.width/len(wordToLearn))*(i+1)
                 Line(points=(x, 0, x, self.painter.height))
@@ -124,52 +204,15 @@ def generateSettings(shapeType):
     doGroupwiseComparison = True; #instead of pairwise comparison with most recent two shapes
     initialParamValue = numpy.NaN
     initialBounds = numpy.array([[numpy.NaN, numpy.NaN]])
-
-    if shapeType == 'a':
-        paramsToVary = [6]
-        initialBounds_stdDevMultiples = numpy.array([[-3, 3]])
-        datasetFile = datasetDirectory + '/a_noHook_dataset.txt'
-        initialParamValue = 0.8; 
-    elif shapeType == 'c':
-        paramToVary = 4
-        initialBounds_stdDevMultiples = numpy.array([[-10, 10]])
-        datasetFile = datasetDirectory + '/c_dataset.txt'
-
-    elif shapeType == 'd':
-        datasetFile = datasetDirectory + '/d_cursive_dataset.txt'
-    elif shapeType == 'e':
-        paramToVary = 3; 
-        initialBounds_stdDevMultiples = numpy.array([[-6, 14]])
-        datasetFile = datasetDirectory + '/e_dataset.txt'
-        #initialParamValue = 0.8
-    elif shapeType == 'm':
-        paramToVary = 6; 
-        initialBounds_stdDevMultiples = numpy.array([[-10, -6]])
-        datasetFile = datasetDirectory + '/m_dataset.txt'
-        initialParamValue = -0.5;#0.0
-    elif shapeType == 'n':
-        paramToVary = 7; 
-        datasetFile = datasetDirectory + '/n_dataset.txt'
-        initialParamValue = 0.0
-    elif shapeType == 'o':
-        paramsToVary = [4]
-        initialBounds_stdDevMultiples = numpy.array([[-3.5, 3]])
-        datasetFile = datasetDirectory + '/o_dataset.txt'
-    elif shapeType == 'r':
-        paramToVary = 1
-        datasetFile = datasetDirectory + '/r_print_dataset.txt'
-    elif shapeType == 's':
-        datasetFile = datasetDirectory + '/s_print_dataset.txt'
-    elif shapeType == 'u':
-        paramsToVary = [3]
-        datasetFile = datasetDirectory + '/u_dataset.txt'
-    elif shapeType == 'v':
-        paramToVary = 6
-        datasetFile = datasetDirectory + '/v_dataset.txt'
-    elif shapeType == 'w':
-        datasetFile = datasetDirectory + '/w_dataset.txt'
-    else:
+    
+    if shapeType not in eigenValuesMap:
         raise RuntimeError("Dataset is not known for shape "+ shapeType)
+    else:
+        initialParamValue = eigenValuesMap[shapeType][0]
+        paramsToVary = [eigenValuesMap[shapeType][1]]
+        if shapeType in styleMap:
+            shapeType = styleMap[shapeType]
+        datasetFile = datasetDirectory + '/' + shapeType + '.dat'
 
     settings = SettingsStruct(shape_learning = shapeType,
             paramsToVary = paramsToVary, doGroupwiseComparison = True, 
@@ -178,7 +221,7 @@ def generateSettings(shapeType):
             initialParamValue = initialParamValue, minParamDiff = 0.4)
     return settings
 
-def showShape(shape, shapeIndex):
+def showShape(shape,shapeIndex ):
     plt.figure(shapeIndex+1)
     plt.clf()
     ShapeModeler.normaliseAndShowShape(shape.path)

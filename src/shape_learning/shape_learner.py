@@ -33,14 +33,13 @@ class ShapeLearner:
         #self.numPrincipleComponents = max(self.paramsToVary);
         self.numPrincipleComponents = NUM_PRINCIPLE_COMPONENTS;
         #assign a ShapeModeler to use
-        shapeModeler = ShapeModeler();
-        shapeModeler.makeDataMatrix(settings.datasetFile);
-        shapeModeler.performPCA(self.numPrincipleComponents);
-        self.shapeModeler = shapeModeler;
+        print(settings.datasetFile)
+        self.shapeModeler = ShapeModeler(filename=settings.datasetFile, num_principle_components=self.numPrincipleComponents);
+        
         
         self.bounds = settings.initialBounds;
         for i in range(len(self.paramsToVary)):
-            parameterVariances = shapeModeler.getParameterVariances();
+            parameterVariances = self.shapeModeler.getParameterVariances();
             if(numpy.isnan(settings.initialBounds[i,0]) or numpy.isnan(settings.initialBounds[i,1])): #want to set initial bounds as std. dev. multiple
                 boundsFromStdDevMultiples = numpy.array(settings.initialBounds_stdDevMultiples[i,:])*parameterVariances[settings.paramsToVary[i]-1];  
                 
@@ -228,9 +227,12 @@ class ShapeLearner:
  
     def respondToDemonstration(self, shape):
         [params_demo, modelError] = self.shapeModeler.decomposeShape(shape);
+        '''
         diff_params = params_demo - self.params;
         diff = numpy.linalg.norm(diff_params);
         self.params += diff_params/2; #go towards the demonstrated shape
+        '''
+        self.params = params_demo; # to go faster...
         #self.params[self.paramsToVary[0]-1] = params_demo[self.paramsToVary[0]-1]; #ONLY USE FIRST PARAM
         #store it as an attempt (this isn't super appropriate but whatever)
         if(self.doGroupwiseComparison):

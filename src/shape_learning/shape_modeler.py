@@ -3,14 +3,16 @@ and to make and show new shapes which are represented by the mean shape
 plus some amount of said principle components.
 """
 
-import numpy
-import matplotlib.pyplot as plt
-from matplotlib.mlab import PCA
 import random
 from copy import deepcopy
 
-class ShapeModeler:
+import numpy
 
+import matplotlib.pyplot as plt
+from matplotlib.mlab import PCA
+
+
+class ShapeModeler:
     def __init__(self, shape_name=None, samples=None, filename=None, num_principle_components=10):
         """ Initialize a shape modeler
 
@@ -53,15 +55,16 @@ class ShapeModeler:
         with open(filename) as f:
             self.numShapesInDataset = int(f.readline().strip())
             self.numPointsInShapes = int(f.readline().strip())
-            if not(self.numShapesInDataset and self.numPointsInShapes):
+            if not (self.numShapesInDataset and self.numPointsInShapes):
                 raise RuntimeError("Unable to read sizes needed from text file")
 
-            self.dataMat = numpy.empty((self.numShapesInDataset, self.numPointsInShapes*2))
+            self.dataMat = numpy.empty((self.numShapesInDataset, self.numPointsInShapes * 2))
             for i in range(self.numShapesInDataset):
                 line = f.readline().strip()
                 values = line.split(' ')
-                if not(len(values) == self.numPointsInShapes*2):
-                    raise RuntimeError("Unable to read appropriate number of points from text file for shape "+str(i+1))
+                if not (len(values) == self.numPointsInShapes * 2):
+                    raise RuntimeError(
+                        "Unable to read appropriate number of points from text file for shape " + str(i + 1))
 
                 self.dataMat[i] = map(float, values)
 
@@ -73,7 +76,7 @@ class ShapeModeler:
         eigVals, eigVecs = numpy.linalg.eig(covarMat)
         self.principleComponents = numpy.real(eigVecs[:, 0:self.num_principle_components])
         self.parameterVariances = numpy.real(eigVals[0:self.num_principle_components])
-        self.meanShape = self.dataMat.mean(0).reshape((self.numPointsInShapes*2, 1))
+        self.meanShape = self.dataMat.mean(0).reshape((self.numPointsInShapes * 2, 1))
 
     def getParameterVariances(self):
         """ Return the variances associated which each of the top principle components
@@ -83,7 +86,7 @@ class ShapeModeler:
     def makeShape(self, params):
         """ Generate a shape with the given parameter vector
         """
-        if(not params.shape == (self.num_principle_components, 1)):
+        if (not params.shape == (self.num_principle_components, 1)):
             raise RuntimeError("Vector of parameters must have dimensions of (num_principle_components,1)")
         shape = self.meanShape + numpy.dot(self.principleComponents, params)
         return shape
@@ -93,7 +96,7 @@ class ShapeModeler:
         """
         xb = numpy.zeros((self.num_principle_components, 1))
         for i in range(len(paramsToVary)):
-            xb[paramsToVary[i]-1, 0] = paramValues[i]
+            xb[paramsToVary[i] - 1, 0] = paramValues[i]
         shape = self.makeShape(xb)
         return shape, xb
 
@@ -104,7 +107,7 @@ class ShapeModeler:
         xb = deepcopy(params)
         for i in range(len(paramsToVary)):
             sample = random.uniform(bounds[i, 0], bounds[i, 1])
-            xb[paramsToVary[i]-1, 0] = sample
+            xb[paramsToVary[i] - 1, 0] = sample
         shape = self.makeShape(xb)
         return shape, xb
 
@@ -115,20 +118,20 @@ class ShapeModeler:
         b = deepcopy(params)
         for i in range(len(paramsToVary)):
             sample = random.triangular(bounds[i, 0], modes[i], bounds[i, 1])
-            b[paramsToVary[i]-1, 0] = sample
+            b[paramsToVary[i] - 1, 0] = sample
         return self.makeShape(b), b
 
     def decomposeShape(self, shape):
         """ Convert shape into its 'num_principle_components' parameter values
         (project it onto the num_principle_components-dimensional space)
         """
-        if(not shape.shape == (self.numPointsInShapes*2, 1)):
+        if (not shape.shape == (self.numPointsInShapes * 2, 1)):
             raise RuntimeError("Shape to decompose must be the same size as shapes used to make the dataset")
         params = numpy.dot(self.principleComponents.T, shape - self.meanShape)
 
         approxShape = self.meanShape + numpy.dot(self.principleComponents, params)
-        diff = abs(shape-approxShape)**2
-        error = sum(diff)/(self.numPointsInShapes*2)
+        diff = abs(shape - approxShape) ** 2
+        error = sum(diff) / (self.numPointsInShapes * 2)
         return params, error
 
     def normaliseMeanShapeHeight(self):
@@ -138,17 +141,17 @@ class ShapeModeler:
         ShapeModeler.showShape(ShapeModeler.normaliseShape(self.meanShape), block)
 
     @staticmethod
-    def showShape(shape, block = False):
+    def showShape(shape, block=False):
         """ Show shape with random colour
         """
-        numPointsInShape = len(shape)/2
+        numPointsInShape = len(shape) / 2
         x_shape = shape[0:numPointsInShape]
         y_shape = shape[numPointsInShape:]
 
-        plt.plot(x_shape, -y_shape, c=numpy.random.rand(3,1))
+        plt.plot(x_shape, -y_shape, c=numpy.random.rand(3, 1))
         plt.axis([-1, 1, -1, 1])
         if block:
-            plt.show(block=block) # block=False <-> plt.draw
+            plt.show(block=block)  # block=False <-> plt.draw
         else:
             plt.draw()
 
@@ -156,23 +159,23 @@ class ShapeModeler:
     def normaliseShape(shape):
         """ Normalise shape so that max dimension is 1 
         """
-        numPointsInShape = len(shape)/2
+        numPointsInShape = len(shape) / 2
         x_shape = shape[0:numPointsInShape]
         y_shape = shape[numPointsInShape:]
 
-        #shift so centre of shape is at (0,0)
-        x_range = max(x_shape)-min(x_shape)
-        y_range = max(y_shape)-min(y_shape)
-        x_shape = x_shape-(max(x_shape)-x_range/2)
-        y_shape = y_shape-(max(y_shape)-y_range/2)
+        # shift so centre of shape is at (0,0)
+        x_range = max(x_shape) - min(x_shape)
+        y_range = max(y_shape) - min(y_shape)
+        x_shape = x_shape - (max(x_shape) - x_range / 2)
+        y_shape = y_shape - (max(y_shape) - y_range / 2)
 
         #normalise shape
-        scale = max(x_range,y_range)
+        scale = max(x_range, y_range)
         if scale < 1e-10:
             print('Warning: shape is probably a bunch of points on top of each other...')
 
-        x_shape = x_shape/scale
-        y_shape = y_shape/scale
+        x_shape = x_shape / scale
+        y_shape = y_shape / scale
 
         newShape = numpy.zeros(shape.shape)
         newShape[0:numPointsInShape] = x_shape
@@ -183,39 +186,39 @@ class ShapeModeler:
     def getShapeCentre(shape):
         """ Calculate the centre of the shape
         """
-        numPointsInShape = len(shape)/2
+        numPointsInShape = len(shape) / 2
         x_shape = shape[0:numPointsInShape]
         y_shape = shape[numPointsInShape:]
 
-        x_range = max(x_shape)-min(x_shape)
-        y_range = max(y_shape)-min(y_shape)
-        x_centre = (max(x_shape)-x_range/2)
-        y_centre = (max(y_shape)-y_range/2)
+        x_range = max(x_shape) - min(x_shape)
+        y_range = max(y_shape) - min(y_shape)
+        x_centre = (max(x_shape) - x_range / 2)
+        y_centre = (max(y_shape) - y_range / 2)
         return [x_centre, -y_centre]
 
     @staticmethod
     def normaliseShapeHeight(shape):
         """ Normalise shape so that height is 1 
         """
-        numPointsInShape = len(shape)/2
+        numPointsInShape = len(shape) / 2
         x_shape = shape[0:numPointsInShape]
         y_shape = shape[numPointsInShape:]
 
-        #shift so centre of shape is at (0,0)
-        x_range = max(x_shape)-min(x_shape)
-        y_range = max(y_shape)-min(y_shape)
-        x_centre = (max(x_shape)-x_range/2)
-        y_centre = (max(y_shape)-y_range/2)
-        x_shape = x_shape-x_centre
-        y_shape = y_shape-y_centre
+        # shift so centre of shape is at (0,0)
+        x_range = max(x_shape) - min(x_shape)
+        y_range = max(y_shape) - min(y_shape)
+        x_centre = (max(x_shape) - x_range / 2)
+        y_centre = (max(y_shape) - y_range / 2)
+        x_shape = x_shape - x_centre
+        y_shape = y_shape - y_centre
 
         #normalise shape
         scale = y_range
         if scale < 1e-10:
             print('Warning: shape is probably a bunch of points on top of each other...')
 
-        x_shape = x_shape/scale
-        y_shape = y_shape/scale
+        x_shape = x_shape / scale
+        y_shape = y_shape / scale
 
         newShape = numpy.zeros(shape.shape)
         newShape[0:numPointsInShape] = x_shape

@@ -5,53 +5,6 @@ from shape_learning.shape_learner_manager import ShapeLearnerManager
 from shape_learning.shape_learner import SettingsStruct
 from shape_learning.shape_modeler import ShapeModeler #for normaliseShapeHeight()
 
-# Mapping of letter to their writing style (when several available in dataset)
-styleMap = {
-'a':'a2',
-'b':'b1', # cursive style
-'d':'d1',
-'g':'g1',
-'h':'h1',
-'k':'k1',
-'l':'l1',
-'n':'n1',
-'o':'o1',
-'p':'p1',
-'r':'r1',
-'s':'s1',
-'u':'u1',
-'v':'v1'
-}
-
-# Mapping between letters and adquate nb of principal components and initial eigen values
-eigenValuesMap = {
-'a':[ 0.8 , 6 ],
-'b':[ 0.0 , 2 ],
-'c':[ 0.0 , 4 ],
-'d':[ 0.0 , 2 ],
-'e':[ 0.0 , 3 ],
-'f':[ 0.0 , 2 ],
-'g':[ 0.0 , 2 ],
-'h':[ 0.0 , 2 ],
-'i':[ 0.0 , 2 ],
-'j':[ 0.0 , 2 ],
-'k':[ 0.0 , 2 ],
-'l':[ 0.0 , 2 ],
-'m':[-0.5 , 6 ],
-'n':[ 0.0 , 7 ],
-'o':[ 0.0 , 4 ],
-'p':[ 0.0 , 2 ],
-'q':[ 0.0 , 2 ],
-'r':[ 0.0 , 1 ],
-'s':[ 0.0 , 2 ],
-'t':[ 0.0 , 2 ],
-'u':[ 0.0 , 3 ],
-'v':[ 0.0 , 6 ],
-'w':[ 0.0 , 2 ],
-'x':[ 0.0 , 2 ],
-'y':[ 0.0 , 2 ],
-'z':[ 0.0 , 2 ]
-}
 
 import numpy
 import matplotlib.pyplot as plt
@@ -149,11 +102,7 @@ class MyPaintWidget(Widget):
             dataShape += ('%f'%x[0] + ' ')
         dataShape += '\n'
         
-        if shapeType not in eigenValuesMap:
-            raise RuntimeError("Dataset is not known for shape "+ shapeType)
-        else:
-            if shapeType in styleMap:
-                shapeType = styleMap[shapeType]
+        try:
             datasetFile = datasetDirectory + '/' + shapeType + '.dat'
             
             with open(datasetFile, 'rb') as f:
@@ -170,7 +119,11 @@ class MyPaintWidget(Widget):
             with open(datasetFile, 'wb') as f:
                 f.write(newData)
                 f.write(dataShape)
-        #---------------------------------------------------------------
+                
+        except IOError:
+            raise RuntimeError("Dataset not found for shape "+ shapeType)
+            
+        #cd---------------------------------------------------------------
 
         shape = wordManager.respondToDemonstration(shapeIndex_demoFor, userShape)
 
@@ -199,20 +152,18 @@ class UserInputCapture(App):
 ###---------------------------------------------- WORD LEARNING SETTINGS
 
 def generateSettings(shapeType):
-    paramsToVary = [2];            #Natural number between 1 and numPrincipleComponents, representing which principle component to vary from the template
+    paramsToVary = [3];            #Natural number between 1 and numPrincipleComponents, representing which principle component to vary from the template
     initialBounds_stdDevMultiples = numpy.array([[-6, 6]]);  #Starting bounds for paramToVary, as multiples of the parameter's observed standard deviation in the dataset
     doGroupwiseComparison = True; #instead of pairwise comparison with most recent two shapes
     initialParamValue = numpy.NaN
     initialBounds = numpy.array([[numpy.NaN, numpy.NaN]])
     
-    if shapeType not in eigenValuesMap:
-        raise RuntimeError("Dataset is not known for shape "+ shapeType)
-    else:
-        initialParamValue = eigenValuesMap[shapeType][0]
-        paramsToVary = [eigenValuesMap[shapeType][1]]
-        if shapeType in styleMap:
-            shapeType = styleMap[shapeType]
+    try:
         datasetFile = datasetDirectory + '/' + shapeType + '.dat'
+        with open(datasetFile, 'rb') as f:
+            pass
+    except IOError:
+        raise RuntimeError("Dataset not found for shape "+ shapeType)
 
     settings = SettingsStruct(shape_learning = shapeType,
             paramsToVary = paramsToVary, doGroupwiseComparison = True, 
@@ -234,7 +185,8 @@ if __name__ == "__main__":
     import inspect
     fileName = inspect.getsourcefile(ShapeModeler)
     installDirectory = fileName.split('/lib')[0]
-    datasetDirectory = installDirectory + '/share/shape_learning/letter_model_datasets/uji_pen_chars2'
+    #datasetDirectory = installDirectory + '/share/shape_learning/letter_model_datasets/uji_pen_chars2'
+    datasetDirectory = installDirectory + '/share/shape_learning/letter_model_datasets/alexis_set_for_children'
 
 
     wordManager = ShapeLearnerManager(generateSettings)

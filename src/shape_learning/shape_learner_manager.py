@@ -6,6 +6,8 @@ history of previous collections seen. An example is managing shape_learners
 which represent letters, and the collections represent words. 
 """
 
+import logging; shapeLogger = logging.getLogger("shape_logger")
+import os.path
 import numpy
 
 from shape_modeler import ShapeModeler
@@ -19,9 +21,29 @@ usePrevParamsWhenShapeReappears = True
 Shape = recordtype('Shape', [('path', None), ('shapeID', None), ('shapeType', None), ('shapeType_code', None),
                              ('paramsToVary', None), ('paramValues', None)])
 
+def configure_logging(path):
+
+    if path:
+        if os.path.isdir(path):
+            path = os.path.join(path, "shapes.log")
+        handler = logging.FileHandler(path)
+        handler.setLevel(logging.DEBUG)
+        formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+        handler.setFormatter(formatter)
+    else:
+        handler = logging.NullHandler()
+
+    shapeLogger.addHandler(handler)
+    shapeLogger.setLevel(logging.DEBUG)
+
+
 # ##--------------------------------------------- WORD LEARNING FUNCTIONS
 class ShapeLearnerManager:
-    def __init__(self, generateSettingsFunction):
+    def __init__(self, generateSettingsFunction, shapes_logging_path = "shapes.log"):
+
+        configure_logging(shapes_logging_path)
+        shapeLogger.info("**************** NEW SESSION ***************")
+
         self.generateSettings = generateSettingsFunction
         self.shapesLearnt = []
         self.shapeLearners_all = []
@@ -32,7 +54,6 @@ class ShapeLearnerManager:
         self.currentCollection = []
         self.collectionsLearnt = []
         self.nextShapeLearnerToBeStarted = 0
-
 
     def initialiseShapeLearners(self):
         self.shapeLearners_currentCollection = []
@@ -75,12 +96,15 @@ class ShapeLearnerManager:
             shapeType = self.currentCollection[self.nextShapeLearnerToBeStarted]
             shapeType_code = self.nextShapeLearnerToBeStarted
             shape_index = self.indexOfShapeInCurrentCollection(shapeType)
-            if (usePrevParamsWhenShapeReappears and
-                    self.shapeLearnersSeenBefore_currentCollection[
-                        self.nextShapeLearnerToBeStarted]):  #shape has been seen before
+
+            if usePrevParamsWhenShapeReappears \
+               and self.shapeLearnersSeenBefore_currentCollection[self.nextShapeLearnerToBeStarted]:  #shape has been seen before
                 [path, paramValues] = self.shapeLearners_currentCollection[shape_index].getLearnedShape()
+                shapeLogger.info("%s: restarting learning. Initial params: %s. Path: %s" % (shapeType, paramValues.flatten().tolist(), path.flatten().tolist()))
             else:
                 [path, paramValues] = self.shapeLearners_currentCollection[shape_index].startLearning()
+                shapeLogger.info("%s: starting learning. Initial params: %s. Path: %s" % (shapeType, paramValues.flatten().tolist(), path.flatten().tolist()))
+
             paramsToVary = self.settings_shapeLearners_currentCollection[shape_index].paramsToVary
             self.nextShapeLearnerToBeStarted += 1
             shape = Shape(path=path, shapeID=0, shapeType=shapeType,
@@ -114,11 +138,18 @@ class ShapeLearnerManager:
             print('Ignoring demonstration because not for valid shape type')
             return -1
         else:
-            [newPath, newParamValues] = self.shapeLearners_currentCollection[
-                shapeIndex_messageFor].respondToDemonstration(shape)
+            newPath, newParamValues, params_demo = self.shapeLearners_currentCollection[shapeIndex_messageFor].respondToDemonstration(shape)
+
+            shapeLogger.info("%s: new demonstration.         Params: %s. Path: %s" % (shape_messageFor, params_demo.flatten().tolist(), shape.flatten().tolist()))
+
             paramsToVary = self.settings_shapeLearners_currentCollection[shapeIndex_messageFor].paramsToVary
-            shape = Shape(path=newPath, shapeID=[], shapeType=shape_messageFor,
-                          shapeType_code=shapeIndex_messageFor, paramsToVary=paramsToVary, paramValues=newParamValues)
+            shape = Shape(path=newPath,
+                          shapeID=[], 
+                          shapeType=shape_messageFor,
+                          shapeType_code=shapeIndex_messageFor, 
+                          paramsToVary=paramsToVary, 
+                          paramValues=newParamValues)
+            shapeLogger.info("%s: new generated model.       Params: %s. Path: %s" % (shape_messageFor, newParamValues.flatten().tolist(), newPath.flatten().tolist()))
             return shape
 
     def indexOfShapeInCurrentCollection(self, shapeType):
@@ -152,6 +183,8 @@ class ShapeLearnerManager:
     def newCollection(self, collection):
         self.currentCollection = collection
         self.nextShapeLearnerToBeStarted = 0
+
+        shapeLogger.info("Starting to work on word <%s>" % collection)
 
         try:
             collection_index = self.collectionsLearnt.index(self.currentCollection)

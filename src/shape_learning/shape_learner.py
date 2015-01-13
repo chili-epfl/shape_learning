@@ -5,6 +5,7 @@ an associated ShapeModeler.
 Depends on shape_modeler and recordtype.
 """
 
+
 import bisect
 from copy import deepcopy
 
@@ -44,6 +45,7 @@ SettingsStruct = recordtype('SettingsStruct',
 
 class ShapeLearner:
     def __init__(self, settings):
+
         self.paramsToVary = settings.paramsToVary
         #self.numPrincipleComponents = max(self.paramsToVary)
         self.numPrincipleComponents = NUM_PRINCIPLE_COMPONENTS
@@ -277,4 +279,4 @@ class ShapeLearner:
             bisect.insort(self.params_sorted, newParamValue)
             self.shapeToParamsMapping.append(self.params)
             #self.respondToFeedback(len(self.params_sorted)-3) # give feedback of most recent shape so bounds modify
-        return self.shapeModeler.makeShape(self.params), self.params
+        return self.shapeModeler.makeShape(self.params), self.params, params_demo

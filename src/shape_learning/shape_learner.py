@@ -262,13 +262,12 @@ class ShapeLearner:
         self.bounds = bounds
 
     def respondToDemonstration(self, shape):
-        [params_demo, modelError] = self.shapeModeler.decomposeShape(shape)
-        '''
+        params_demo, modelError = self.shapeModeler.decomposeShape(shape)
+
         diff_params = params_demo - self.params
         diff = numpy.linalg.norm(diff_params)
         self.params += diff_params/2 #go towards the demonstrated shape
-        '''
-        self.params = params_demo  # to go faster...
+
         #self.params[self.paramsToVary[0]-1] = params_demo[self.paramsToVary[0]-1] #ONLY USE FIRST PARAM
         #store it as an attempt (this isn't super appropriate but whatever)
         if (self.doGroupwiseComparison):

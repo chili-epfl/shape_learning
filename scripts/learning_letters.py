@@ -97,6 +97,7 @@ class MyPaintWidget(Widget):
         userShape = ShapeModeler.normaliseShapeHeight(numpy.array(userShape))
         
         #------------This is to add the user's drawing to the data base:
+        '''
         dataShape = ''
         for x in userShape:
             dataShape += ('%f'%x[0] + ' ')
@@ -122,7 +123,7 @@ class MyPaintWidget(Widget):
                 
         except IOError:
             raise RuntimeError("Dataset not found for shape "+ shapeType)
-            
+            '''
         #cd---------------------------------------------------------------
 
         shape = wordManager.respondToDemonstration(shapeIndex_demoFor, userShape)
@@ -170,22 +171,13 @@ def generateSettings(shapeType):
         print(shapeType)
         with open(datasetParam, 'r') as f:
             
-            #for k, v in params.items():
-            #    f.write("[" + k + "]\n")
-            #    f.write("%s\n" % " ".join([str(i[0]) for i in v]))
-            
             line = f.readline()
-            test = line.replace('[','').replace(']','')==shapeType
-            print(line.replace('[','').replace(']',''))
+            test = line.replace('[','').replace(']\n','')==shapeType
             while test==False:
                 line = f.readline()
-                #if line:
-                    #print(line.replace('[','').replace(']\n','')+'_'+shapeType+'?')
-                    #print(line.replace('[','').replace(']\n','')==shapeType)
                 test = line.replace('[','').replace(']\n','')==shapeType
             if test:
                 s = f.readline().replace('\n','')
-                print(s)
                 initialParamValue = (float)(s)
             else:
                 initialParamValue = 0.0

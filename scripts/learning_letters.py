@@ -164,6 +164,35 @@ def generateSettings(shapeType):
             pass
     except IOError:
         raise RuntimeError("Dataset not found for shape "+ shapeType)
+        
+    try:
+        datasetParam = datasetDirectory + '/params.dat'
+        print(shapeType)
+        with open(datasetParam, 'r') as f:
+            
+            #for k, v in params.items():
+            #    f.write("[" + k + "]\n")
+            #    f.write("%s\n" % " ".join([str(i[0]) for i in v]))
+            
+            line = f.readline()
+            test = line.replace('[','').replace(']','')==shapeType
+            print(line.replace('[','').replace(']',''))
+            while test==False:
+                line = f.readline()
+                #if line:
+                    #print(line.replace('[','').replace(']\n','')+'_'+shapeType+'?')
+                    #print(line.replace('[','').replace(']\n','')==shapeType)
+                test = line.replace('[','').replace(']\n','')==shapeType
+            if test:
+                s = f.readline().replace('\n','')
+                print(s)
+                initialParamValue = (float)(s)
+            else:
+                initialParamValue = 0.0
+                raise RuntimeError("parameters not found for shape "+ shapeType +'\n'+'Default : 0.0')
+            
+    except IOError:
+        raise RuntimeError("parameters not found for this dataset ")
 
     settings = SettingsStruct(shape_learning = shapeType,
             paramsToVary = paramsToVary, doGroupwiseComparison = True, 

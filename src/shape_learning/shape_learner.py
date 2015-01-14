@@ -70,8 +70,10 @@ class ShapeLearner:
         self.doGroupwiseComparison = settings.doGroupwiseComparison
         self.shape_learning = settings.shape_learning
         self.minParamDiff = settings.minParamDiff
+        
         self.initialParamValue = settings.initialParamValue
         self.params = numpy.zeros((self.numPrincipleComponents, 1))
+        self.params[0][0] = -self.initialParamValue
 
         self.initialBounds = deepcopy(self.bounds)
         self.converged = False
@@ -265,7 +267,6 @@ class ShapeLearner:
 
     def respondToDemonstration(self, shape):
         params_demo, modelError = self.shapeModeler.decomposeShape(shape)
-
         diff_params = params_demo - self.params
         diff = numpy.linalg.norm(diff_params)
         self.params += diff_params/2 #go towards the demonstrated shape

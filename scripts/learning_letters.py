@@ -5,6 +5,7 @@ from shape_learning.shape_learner_manager import ShapeLearnerManager
 from shape_learning.shape_learner import SettingsStruct
 from shape_learning.shape_modeler import ShapeModeler #for normaliseShapeHeight()
 
+import os.path
 
 import numpy
 import matplotlib.pyplot as plt
@@ -82,7 +83,6 @@ class MyPaintWidget(Widget):
         global userShape
         touch.ud['line'].points
         userShape = downsampleShape(userShape,numPoints_shapeModeler,xyxyFormat=True)
-
         shapeCentre = ShapeModeler.getShapeCentre(userShape)
         
         for i in range(len(wordToLearn)):
@@ -94,38 +94,7 @@ class MyPaintWidget(Widget):
         print('Received demo for letter ' + shapeType)
 
         userShape = numpy.reshape(userShape, (-1, 1)); #explicitly make it 2D array with only one column
-        userShape = ShapeModeler.normaliseShapeHeight(numpy.array(userShape))
-        
-        #------------This is to add the user's drawing to the data base:
-        '''
-        dataShape = ''
-        for x in userShape:
-            dataShape += ('%f'%x[0] + ' ')
-        dataShape += '\n'
-        
-        try:
-            datasetFile = datasetDirectory + '/' + shapeType + '.dat'
-            
-            with open(datasetFile, 'rb') as f:
-                l = f.readlines()[0]
-                numExemples = (int)(l)
-                l = '%i\n' % (numExemples+1)
-                newData = l
-            with open(datasetFile, 'rb') as f:
-                ind = 0
-                for l in f.readlines():
-                    if ind>0:
-                        newData = newData + l
-                    ind+=1
-            with open(datasetFile, 'wb') as f:
-                f.write(newData)
-                f.write(dataShape)
-                
-        except IOError:
-            raise RuntimeError("Dataset not found for shape "+ shapeType)
-            '''
-        #cd---------------------------------------------------------------
-
+        #userShape = ShapeModeler.normaliseShapeHeight(numpy.array(userShape))
         shape = wordManager.respondToDemonstration(shapeIndex_demoFor, userShape)
 
         userShape = []
@@ -158,18 +127,23 @@ def generateSettings(shapeType):
     doGroupwiseComparison = True; #instead of pairwise comparison with most recent two shapes
     initialParamValue = numpy.NaN
     initialBounds = numpy.array([[numpy.NaN, numpy.NaN]])
+
+    init_datasetFile = init_datasetDirectory + '/' + shapeType + '.dat'
+    update_datasetFile = update_datasetDirectory + '/' + shapeType + '.dat'
     
-    try:
-        datasetFile = datasetDirectory + '/' + shapeType + '.dat'
-        with open(datasetFile, 'rb') as f:
-            pass
-    except IOError:
-        raise RuntimeError("Dataset not found for shape "+ shapeType)
+    if not os.path.exists(init_datasetFile):
+        raise RuntimeError("Dataset not found for shape" + shapeType)
+        
+    if not os.path.exists(update_datasetFile):
+        try:
+            with open(update_datasetFile, 'w') as f:
+                pass
+        except IOError:
+                    raise RuntimeError("no writing permission for file"+update_datasetFile)
         
     try:
-        datasetParam = datasetDirectory + '/params.dat'
+        datasetParam = init_datasetDirectory + '/params.dat'
         with open(datasetParam, 'r') as f:
-            
             line = f.readline()
             test = line.replace('[','').replace(']\n','')==shapeType
             while test==False:
@@ -186,13 +160,17 @@ def generateSettings(shapeType):
                 print("parameters not found for shape "+ shapeType +'\n'+'Default : 0.0')
             
     except IOError:
-        raise RuntimeError("parameters not found for this dataset ")
+        raise RuntimeError("no reading permission for file"+datasetParam)
 
     settings = SettingsStruct(shape_learning = shapeType,
-            paramsToVary = paramsToVary, doGroupwiseComparison = True, 
-            datasetFile = datasetFile, initialBounds = initialBounds, 
-            initialBounds_stdDevMultiples = initialBounds_stdDevMultiples,
-            initialParamValue = initialParamValue, minParamDiff = 0.4)
+                                paramsToVary = paramsToVary, 
+                                doGroupwiseComparison = True,
+                                initDatasetFile = init_datasetFile, 
+                                updateDatasetFiles = [update_datasetFile],
+                                initialBounds = initialBounds, 
+                                initialBounds_stdDevMultiples = initialBounds_stdDevMultiples,
+                                initialParamValue = initialParamValue, 
+                                minParamDiff = 0.4)
     return settings
 
 def showShape(shape,shapeIndex ):
@@ -209,8 +187,13 @@ if __name__ == "__main__":
     fileName = inspect.getsourcefile(ShapeModeler)
     installDirectory = fileName.split('/lib')[0]
     #datasetDirectory = installDirectory + '/share/shape_learning/letter_model_datasets/uji_pen_chars2'
-    datasetDirectory = installDirectory + '/share/shape_learning/letter_model_datasets/alexis_set_for_children'
-
+    init_datasetDirectory = installDirectory + '/share/shape_learning/letter_model_datasets/alexis_set_for_children'
+    update_datasetDirectory = installDirectory + '/share/shape_learning/letter_model_datasets/diego_set'
+    
+    if not os.path.exists(init_datasetDirectory):
+        raise RuntimeError("initial dataset directory not found !")
+    if not os.path.exists(update_datasetDirectory):
+        os.makedir(update_datasetDirectory)
 
     wordManager = ShapeLearnerManager(generateSettings)
     wordSeenBefore = wordManager.newCollection(wordToLearn)

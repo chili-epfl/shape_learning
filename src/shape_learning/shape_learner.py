@@ -24,13 +24,14 @@ maxNumAttempts = 10000
 # Tolerance on convergence test
 tol = 1e-2
 
-NUM_PRINCIPLE_COMPONENTS = 10
+NUM_PRINCIPLE_COMPONENTS = 5
 
 from recordtype import recordtype  #for mutable namedtuple (dict might also work)
 
 SettingsStruct = recordtype('SettingsStruct',
                             ['shape_learning',  #String representing the shape which the object is learning
-                             'datasetFile',  #Path to the dataset file which will be passed to the ShapeModeler
+                             'initDatasetFile',  #Path to the dataset file that will be used to initialize the matrix for PCA
+                             'updateDatasetFiles',  #List of path -- or single path-- to dataset that will be updated with demo shapes
                              'paramsToVary',
                              #Natural number between 1 and number of parameters in the associated ShapeModeler, representing the parameter to learn
                              'doGroupwiseComparison',  #instead of pairwise comparison with most recent two shapes
@@ -50,8 +51,9 @@ class ShapeLearner:
         #self.numPrincipleComponents = max(self.paramsToVary)
         self.numPrincipleComponents = NUM_PRINCIPLE_COMPONENTS
         #assign a ShapeModeler to use
-        print(settings.datasetFile)
-        self.shapeModeler = ShapeModeler(filename=settings.datasetFile,
+        print(settings.initDatasetFile)
+        self.shapeModeler = ShapeModeler(init_filename=settings.initDatasetFile,
+                                         update_filenames=settings.updateDatasetFiles,
                                          num_principle_components=self.numPrincipleComponents)
 
         self.bounds = settings.initialBounds
@@ -266,6 +268,12 @@ class ShapeLearner:
         self.bounds = bounds
 
     def respondToDemonstration(self, shape):
+        shape = ShapeModeler.normaliseShapeHeight(numpy.array(shape))
+        #add the demo shape to the matrix for PCA
+        self.shapeModeler.extendDataMat(shape)
+        #add the demo shape to the end of updated datasets
+        #self.shapeModeler.appendToDataset(shape)
+        
         params_demo, modelError = self.shapeModeler.decomposeShape(shape)
         diff_params = params_demo - self.params
         diff = numpy.linalg.norm(diff_params)

@@ -7,17 +7,28 @@ import random
 from copy import deepcopy
 
 import numpy
+import os.path
 
 import matplotlib.pyplot as plt
 from matplotlib.mlab import PCA
 
 
 class ShapeModeler:
-    def __init__(self, shape_name=None, samples=None, filename=None, num_principle_components=10):
+    def __init__(self,
+                 shape_name=None, 
+                 samples=None, 
+                 init_filename=None,
+                 update_filenames=None, 
+                 num_principle_components=10):
         """ Initialize a shape modeler
 
-        If given a dataset (params samples or filename), loads the training
+        If given an initial dataset (params samples or init_filename), loads the training
         dataset for a given shape, and run a PCA decomposition on it.
+        
+        The update dataset (a file name or a list of file names) are used to serialize 
+        the shapes from demonstrations. If it's a list, the first file will contains
+        the initial shapes + the demo shapes, and the followings will contain just
+        the demo shapes.
 
         :param samples: a list of sample shapes, each presented as a list of coordinates [x1,x2,...,y1,y2...].
                         Each shape must have the same number of coordinates.
@@ -28,16 +39,23 @@ class ShapeModeler:
         self.shape_name = shape_name
         self.num_principle_components = num_principle_components
 
-        if samples is None and filename is None:
+        if samples is None and init_filename is None:
             return
 
         if samples:
             self.dataMat = numpy.array(samples)
 
-        elif filename:
-            self.makeDataMatrix(filename)
+        elif init_filename:
+            self.makeDataMatrix(init_filename)
+
+        if update_filenames:
+            if isinstance(update_filenames,list):
+                self.update_filenames = update_filenames
+            else:
+                self.update_filenames = [update_filenames]
 
         self.performPCA()
+        #self.createNewSet()
 
     def makeDataMatrix(self, filename):
         """Read data from text file and store resulting data matrix
@@ -58,7 +76,9 @@ class ShapeModeler:
             if not (self.numShapesInDataset and self.numPointsInShapes):
                 raise RuntimeError("Unable to read sizes needed from text file")
 
+            self.numShapesInDemo = 0
             self.dataMat = numpy.empty((self.numShapesInDataset, self.numPointsInShapes * 2))
+            self.demoDataMat = numpy.empty((self.numShapesInDemo, self.numPointsInShapes * 2))
             for i in range(self.numShapesInDataset):
                 line = f.readline().strip()
                 values = line.split(' ')
@@ -139,6 +159,55 @@ class ShapeModeler:
 
     def showMeanShape(self, block=True):
         ShapeModeler.showShape(ShapeModeler.normaliseShape(self.meanShape), block)
+        
+        
+    def extendDataMat(self, shape):
+        """ Add the demonstrated shape to the data matrix to performe PCA. 
+        We want to update principle components by taking into account the demo shapes.
+        """
+        self.numShapesInDataset+=1
+        self.numShapesInDemo+=1
+        self.dataMat = numpy.append(self.dataMat, shape.T, axis=0)
+        self.demoDataMat = numpy.append(self.demoDataMat, shape.T, axis=0)
+        self.performPCA()
+        self.save_all()
+        self.save_demo()
+
+    def save_all(self):
+        """ save the inital shape + the demo shapes into a new dataset.
+        """
+        if self.update_filenames:
+            filename = self.update_filenames[0]
+            print('saving in'+filename)
+            if not os.path.exists(filename):
+                raise RuntimeError("path to dataset"+filename+"not found")
+            try:
+                with open(filename, 'wb') as f:
+                    f.write('%i\n'%self.numShapesInDataset)
+                    f.write('%i\n'%self.numPointsInShapes)
+                    for i in range(len(self.dataMat)):
+                        f.write(' '.join(map(str,self.dataMat[i])))
+                        f.write('\n')
+            except IOError:
+                raise RuntimeError("no writing permission for file"+filename)
+                    
+    def save_demo(self):
+        """ save the demo shape into a new data set.
+        """
+        if len(self.update_filenames)>1:
+            for filename in self.update_filenames[1:]:
+                if not os.path.exists(filename):
+                    raise RuntimeError("path to dataset"+filename+"not found")
+                try:
+                    with open(filename, 'wb') as f:
+                        f.write('%i\n'%self.numShapesInDemo)
+                        f.write('%i\n'%self.numPointsInShapes)
+                        for i in range(len(self.dataMat)):
+                            f.write(' '.join(map(str,self.demoDataMat[i])))
+                            f.write('\n')
+                except IOError:
+                    raise RuntimeError("no writing permission for file"+filename)
+        
 
     @staticmethod
     def showShape(shape, block=False):

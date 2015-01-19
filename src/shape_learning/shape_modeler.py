@@ -168,8 +168,6 @@ class ShapeModeler:
         self.dataMat = numpy.append(self.dataMat, shape.T, axis=0)
         self.demoDataMat = numpy.append(self.demoDataMat, shape.T, axis=0)
         self.performPCA()
-        self.save_all()
-        self.save_demo()
 
     def save_all(self):
         """ save the inital shape + the demo shapes into a new dataset.

@@ -48,10 +48,8 @@ class ShapeModeler:
         elif init_filename:
             self.makeDataMatrix(init_filename)
 
-        if update_filenames:
-            if isinstance(update_filenames,list):
-                self.update_filenames = update_filenames
-            else:
+        self.update_filenames = update_filenames
+        if not isinstance(update_filenames,list):
                 self.update_filenames = [update_filenames]
 
         self.performPCA()

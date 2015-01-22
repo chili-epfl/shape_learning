@@ -180,6 +180,28 @@ class ShapeLearnerManager:
             shapeType = -1
         return shapeType
 
+    def shapesOfCurrentCollection(self):
+
+        shapes = []
+
+        for idx, shape_learner in enumerate(self.shapeLearners_currentCollection):
+
+            path, paramValues = shape_learner.getLearnedShape()
+            paramsToVary = shape_learner.paramsToVary
+            shapeName = self.shapeAtIndexInCurrentCollection(idx)
+            code = self.indexOfShapeInAllShapesLearnt(shapeName)
+
+            shape = Shape(path=path,
+                    shapeID=[], 
+                    shapeType=shapeName,
+                    shapeType_code=code, 
+                    paramsToVary=paramsToVary, 
+                    paramValues=paramValues)
+
+            shapes.append(shape)
+
+        return shapes
+
     def newCollection(self, collection):
         self.currentCollection = collection
         self.nextShapeLearnerToBeStarted = 0

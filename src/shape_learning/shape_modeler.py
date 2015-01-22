@@ -48,10 +48,8 @@ class ShapeModeler:
         elif init_filename:
             self.makeDataMatrix(init_filename)
 
-        if update_filenames:
-            if isinstance(update_filenames,list):
-                self.update_filenames = update_filenames
-            else:
+        self.update_filenames = update_filenames
+        if not isinstance(update_filenames,list):
                 self.update_filenames = [update_filenames]
 
         self.performPCA()
@@ -170,8 +168,6 @@ class ShapeModeler:
         self.dataMat = numpy.append(self.dataMat, shape.T, axis=0)
         self.demoDataMat = numpy.append(self.demoDataMat, shape.T, axis=0)
         self.performPCA()
-        self.save_all()
-        self.save_demo()
 
     def save_all(self):
         """ save the inital shape + the demo shapes into a new dataset.

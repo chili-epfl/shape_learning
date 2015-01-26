@@ -53,6 +53,8 @@ class ShapeModeler:
                 self.update_filenames = [update_filenames]
 
         self.performPCA()
+        
+        (self.refParams, error) = self.decomposeShape(numpy.reshape(self.dataMat[0], (-1, 1)))
         #self.createNewSet()
 
     def makeDataMatrix(self, filename):
@@ -68,23 +70,42 @@ class ShapeModeler:
             xn1 xn2 ... xnm yn1 yn2 ... ynm
 
         """
-        with open(filename) as f:
-            self.numShapesInDataset = int(f.readline().strip())
-            self.numPointsInShapes = int(f.readline().strip())
-            if not (self.numShapesInDataset and self.numPointsInShapes):
-                raise RuntimeError("Unable to read sizes needed from text file")
+        
+        # scan the dataset :
+        lines = []
+        try: 
+            with open(filename, 'r') as f:
+                lines.append(f.readline())
+                lines.append(f.readline())
+                nb_samples =  int(lines[1].strip())
+                for i in range(nb_samples+5):
+                    lines.append(f.readline())
+        except IOError:
+            raise RuntimeError("no reading permission for file"+filename)
 
-            self.numShapesInDemo = 0
-            self.dataMat = numpy.empty((self.numShapesInDataset, self.numPointsInShapes * 2))
-            self.demoDataMat = numpy.empty((self.numShapesInDemo, self.numPointsInShapes * 2))
-            for i in range(self.numShapesInDataset):
-                line = f.readline().strip()
-                values = line.split(' ')
-                if not (len(values) == self.numPointsInShapes * 2):
-                    raise RuntimeError(
-                        "Unable to read appropriate number of points from text file for shape " + str(i + 1))
+        self.numShapesInDataset = int(lines[1].strip())
+        self.numPointsInShapes = int(lines[3].strip())
+        if not (self.numShapesInDataset and self.numPointsInShapes):
+            raise RuntimeError("Unable to read sizes needed from text file")
 
-                self.dataMat[i] = map(float, values)
+        self.numShapesInDemo = 0
+        self.dataMat = numpy.empty((self.numShapesInDataset, self.numPointsInShapes * 2))
+        self.demoDataMat = numpy.empty((self.numShapesInDemo, self.numPointsInShapes * 2))
+        
+        ref_line = lines[5].strip()
+        ref_values =  ref_line.split(' ')
+        if not (len(ref_values) == self.numPointsInShapes * 2):
+            raise RuntimeError("Unable to read appropriate number of points from text file for reference shape ")
+        self.refShape = map(float, ref_values)
+        self.dataMat[0] = self.refShape
+
+        for i in range(self.numShapesInDataset-1): # -1 because we have already add the first shape (reference)
+            line = lines[i+7].strip()
+            values = line.split(' ')
+            if not (len(values) == self.numPointsInShapes * 2):
+                raise RuntimeError(
+                    "Unable to read appropriate number of points from text file for shape " + str(i + 1))
+            self.dataMat[i+1] = map(float, values)
 
     def performPCA(self):
         """ Calculate the top 'num_principle_components' principle components of
@@ -144,6 +165,8 @@ class ShapeModeler:
         (project it onto the num_principle_components-dimensional space)
         """
         if (not shape.shape == (self.numPointsInShapes * 2, 1)):
+            print(shape.shape)
+            print(self.numPointsInShapes)
             raise RuntimeError("Shape to decompose must be the same size as shapes used to make the dataset")
         params = numpy.dot(self.principleComponents.T, shape - self.meanShape)
 
@@ -168,6 +191,7 @@ class ShapeModeler:
         self.dataMat = numpy.append(self.dataMat, shape.T, axis=0)
         self.demoDataMat = numpy.append(self.demoDataMat, shape.T, axis=0)
         self.performPCA()
+        (self.refParams, error) = self.decomposeShape(numpy.reshape(self.dataMat[0], (-1, 1)))
 
     def save_all(self):
         """ save the inital shape + the demo shapes into a new dataset.
@@ -179,10 +203,15 @@ class ShapeModeler:
                 raise RuntimeError("path to dataset"+filename+"not found")
             try:
                 with open(filename, 'wb') as f:
+                    f.write('nb_sample:\n')
                     f.write('%i\n'%self.numShapesInDataset)
+                    f.write('nb_pts:\n')
                     f.write('%i\n'%self.numPointsInShapes)
-                    for i in range(len(self.dataMat)):
-                        f.write(' '.join(map(str,self.dataMat[i])))
+                    f.write('ref:\n')
+                    f.write(' '.join(map(str,self.dataMat[0])) + '\n')
+                    f.write('...\n')
+                    for i in range(len(self.dataMat)-1):
+                        f.write(' '.join(map(str,self.dataMat[i+1])))
                         f.write('\n')
             except IOError:
                 raise RuntimeError("no writing permission for file"+filename)
@@ -196,10 +225,15 @@ class ShapeModeler:
                     raise RuntimeError("path to dataset"+filename+"not found")
                 try:
                     with open(filename, 'wb') as f:
-                        f.write('%i\n'%self.numShapesInDemo)
+                        f.write('nb_sample:\n')
+                        f.write('%i\n'%self.numShapesInDataset)
+                        f.write('nb_pts:\n')
                         f.write('%i\n'%self.numPointsInShapes)
-                        for i in range(len(self.dataMat)):
-                            f.write(' '.join(map(str,self.demoDataMat[i])))
+                        f.write('ref:\n')
+                        f.write(' '.join(map(str,self.dataMat[0])) + '\n')
+                        f.write('...\n')
+                        for i in range(len(self.dataMat)-1):
+                            f.write(' '.join(map(str,self.demoDataMat[i+1])))
                             f.write('\n')
                 except IOError:
                     raise RuntimeError("no writing permission for file"+filename)

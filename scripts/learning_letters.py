@@ -94,8 +94,9 @@ class MyPaintWidget(Widget):
         print('Received demo for letter ' + shapeType)
 
         userShape = numpy.reshape(userShape, (-1, 1)); #explicitly make it 2D array with only one column
-        #userShape = ShapeModeler.normaliseShapeHeight(numpy.array(userShape))
         shape = wordManager.respondToDemonstration(shapeIndex_demoFor, userShape)
+        wordManager.save_all(shapeIndex_demoFor)
+        
 
         userShape = []
         self.canvas.remove(touch.ud['line'])
@@ -130,6 +131,7 @@ def generateSettings(shapeType):
 
     init_datasetFile = init_datasetDirectory + '/' + shapeType + '.dat'
     update_datasetFile = update_datasetDirectory + '/' + shapeType + '.dat'
+    demo_datasetFile = demo_datasetDirectory + '/' + shapeType + '.dat'
     
     if not os.path.exists(init_datasetFile):
         raise RuntimeError("Dataset not found for shape" + shapeType)
@@ -140,6 +142,13 @@ def generateSettings(shapeType):
                 pass
         except IOError:
                     raise RuntimeError("no writing permission for file"+update_datasetFile)
+                    
+    if not os.path.exists(demo_datasetFile):
+        try:
+            with open(demo_datasetFile, 'w') as f:
+                pass
+        except IOError:
+                    raise RuntimeError("no writing permission for file"+demo_datasetFile)
         
     try:
         datasetParam = init_datasetDirectory + '/params.dat'
@@ -166,7 +175,7 @@ def generateSettings(shapeType):
                                 paramsToVary = paramsToVary, 
                                 doGroupwiseComparison = True,
                                 initDatasetFile = init_datasetFile, 
-                                updateDatasetFiles = [update_datasetFile],
+                                updateDatasetFiles = [update_datasetFile,demo_datasetFile],
                                 initialBounds = initialBounds, 
                                 initialBounds_stdDevMultiples = initialBounds_stdDevMultiples,
                                 initialParamValue = initialParamValue, 
@@ -188,7 +197,8 @@ if __name__ == "__main__":
     installDirectory = fileName.split('/lib')[0]
     #datasetDirectory = installDirectory + '/share/shape_learning/letter_model_datasets/uji_pen_chars2'
     init_datasetDirectory = installDirectory + '/share/shape_learning/letter_model_datasets/alexis_set_for_children'
-    update_datasetDirectory = installDirectory + '/share/shape_learning/letter_model_datasets/diego_set'
+    update_datasetDirectory = installDirectory + '/share/shape_learning/letter_model_datasets/alexis_set_for_children'
+    demo_datasetDirectory = installDirectory + '/share/shape_learning/letter_model_datasets/diego_set'
     
     if not os.path.exists(init_datasetDirectory):
         raise RuntimeError("initial dataset directory not found !")
@@ -204,4 +214,9 @@ if __name__ == "__main__":
         shape = wordManager.startNextShapeLearner()
         showShape(shape, i)
 
-    UserInputCapture().run()
+    try:
+        UserInputCapture().run()
+        
+    except KeyboardInterrupt:
+            # ShapeModeler.save()
+            logger.info("Bye bye")

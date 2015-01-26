@@ -230,3 +230,19 @@ class ShapeLearnerManager:
 
     def generateSimulatedFeedback(self, shapeType_index, newShape, newParamValue):
         return self.shapeLearners_currentCollection[shapeType_index].generateSimulatedFeedback(newShape, newParamValue)
+        
+    def save_all(self, shapeIndex_messageFor):
+        shape_messageFor = self.shapeAtIndexInAllShapesLearnt(shapeIndex_messageFor)
+        if (shape_messageFor < 0 ):
+            print('Ignoring demonstration because not for valid shape type')
+            return -1
+        else:
+            self.shapeLearners_currentCollection[shapeIndex_messageFor].save_all()
+            
+    def save_demo(self, shapeIndex_messageFor):
+        shape_messageFor = self.shapeAtIndexInAllShapesLearnt(shapeIndex_messageFor)
+        if (shape_messageFor < 0 ):
+            print('Ignoring demonstration because not for valid shape type')
+            return -1
+        else:
+            self.shapeLearners_currentCollection[shapeIndex_messageFor].save_demo()

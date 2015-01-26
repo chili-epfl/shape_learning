@@ -268,16 +268,39 @@ class ShapeLearner:
         self.bounds = bounds
 
     def respondToDemonstration(self, shape):
-        shape = ShapeModeler.normaliseShapeHeight(numpy.array(shape))
-        #add the demo shape to the matrix for PCA
-        self.shapeModeler.extendDataMat(shape)
-        #add the demo shape to the end of updated datasets
-        #self.shapeModeler.appendToDataset(shape)
+        """
+        Algo:
         
-        params_demo, modelError = self.shapeModeler.decomposeShape(shape)
+        1) takes the shape of the demonstration
+        
+        2) takes the curent learned shape
+        
+        3) re-performs PCA taking in account the domonstrated shape,
+           then obtains a new space with new eigen vectors
+           
+        4) projects demonstrated and learned shapes into this new space 
+           and gets their new parameters  
+           
+        5) updates the learned parameters as the algebric middle 
+           between demonstrated parameters and curent learned parameters. 
+        """
+        demo_shape = ShapeModeler.normaliseShapeHeight(numpy.array(shape))
+        
+        # take the shape corresponding to the curent learned parameters in the curent space
+        learned_shape = self.shapeModeler.makeShape(self.params)
+        
+        # add the demo shape to the matrix for PCA and re-compute reference-shape params
+        self.shapeModeler.extendDataMat(demo_shape)
+        ref_params = self.shapeModeler.refParams
+        
+        # re-compute parameters of the learned shape and the demo shape in the new PCA-space
+        params_demo, _ = self.shapeModeler.decomposeShape(demo_shape)
+        self.params, _ = self.shapeModeler.decomposeShape(learned_shape)
+        
+        # learning :
         diff_params = params_demo - self.params
-        diff = numpy.linalg.norm(diff_params)
         self.params += diff_params/2 #go towards the demonstrated shape
+
 
         #self.params[self.paramsToVary[0]-1] = params_demo[self.paramsToVary[0]-1] #ONLY USE FIRST PARAM
         #store it as an attempt (this isn't super appropriate but whatever)
@@ -289,3 +312,9 @@ class ShapeLearner:
             self.shapeToParamsMapping.append(self.params)
             #self.respondToFeedback(len(self.params_sorted)-3) # give feedback of most recent shape so bounds modify
         return self.shapeModeler.makeShape(self.params), self.params, params_demo
+    
+    def save_all(self):
+        self.shapeModeler.save_all()
+    
+    def save_demo(self):
+        self.shapeModeler.save_demo()

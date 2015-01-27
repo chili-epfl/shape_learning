@@ -8,9 +8,7 @@ which represent letters, and the collections represent words.
 
 import logging; shapeLogger = logging.getLogger("shape_logger")
 import os.path
-import numpy
 
-from shape_modeler import ShapeModeler
 from shape_learner import ShapeLearner
 from recordtype import recordtype  # for mutable namedtuple (dict might also work)
 
@@ -51,7 +49,7 @@ class ShapeLearnerManager:
         self.settings_shapeLearners_all = []
         self.settings_shapeLearners_currentCollection = []
         self.shapeLearnersSeenBefore_currentCollection = []
-        self.currentCollection = []
+        self.currentCollection = ""
         self.collectionsLearnt = []
         self.nextShapeLearnerToBeStarted = 0
 
@@ -100,7 +98,7 @@ class ShapeLearnerManager:
             if usePrevParamsWhenShapeReappears \
                and self.shapeLearnersSeenBefore_currentCollection[self.nextShapeLearnerToBeStarted]:  #shape has been seen before
                 [path, paramValues] = self.shapeLearners_currentCollection[shape_index].getLearnedShape()
-                shapeLogger.info("%s: restarting learning. Initial params: %s. Path: %s" % (shapeType, paramValues.flatten().tolist(), path.flatten().tolist()))
+                shapeLogger.info("%s: continuing learning. Current params: %s. Path: %s" % (shapeType, paramValues.flatten().tolist(), path.flatten().tolist()))
             else:
                 [path, paramValues] = self.shapeLearners_currentCollection[shape_index].startLearning()
                 shapeLogger.info("%s: starting learning. Initial params: %s. Path: %s" % (shapeType, paramValues.flatten().tolist(), path.flatten().tolist()))
@@ -111,13 +109,12 @@ class ShapeLearnerManager:
                           shapeType_code=shapeType_code, paramsToVary=paramsToVary, paramValues=paramValues)
             return shape
         else:
-            print('Don\'t know what shape learner you want me to start...')
-            return -1
+            raise RuntimeError('Don\'t know what shape learner you want me to start...')
 
     def feedbackManager(self, shapeIndex_messageFor, bestShape_index, noNewShape):
         shape_messageFor = self.shapeAtIndexInCurrentCollection(shapeIndex_messageFor)
         if (shape_messageFor < 0 ):
-            print('Ignoring message because not for valid shape type')
+            shapeLogger.warning('Ignoring message because not for valid shape type')
             return -1
         else:
 
@@ -135,7 +132,7 @@ class ShapeLearnerManager:
     def respondToDemonstration(self, shapeIndex_messageFor, shape):
         shape_messageFor = self.shapeAtIndexInAllShapesLearnt(shapeIndex_messageFor)
         if (shape_messageFor < 0 ):
-            print('Ignoring demonstration because not for valid shape type')
+            shapeLogger.warning('Ignoring demonstration because not for valid shape type')
             return -1
         else:
             newPath, newParamValues, params_demo = self.shapeLearners_currentCollection[shapeIndex_messageFor].respondToDemonstration(shape)
@@ -203,13 +200,25 @@ class ShapeLearnerManager:
         return shapes
 
     def newCollection(self, collection):
-        self.currentCollection = collection
+
+        self.currentCollection = ""
+        # check, for each letter, that we have the corresponding dataset
+        for l in collection:
+            try:
+                self.generateSettings(l)
+            except RuntimeError:
+                # no dataset for this letter!
+                shapeLogger.error("No dataset available for letter <%s>. Skipping this letter." % l)
+                continue
+
+            self.currentCollection += l
+
         self.nextShapeLearnerToBeStarted = 0
 
         shapeLogger.info("Starting to work on word <%s>" % collection)
 
         try:
-            collection_index = self.collectionsLearnt.index(self.currentCollection)
+            self.collectionsLearnt.index(self.currentCollection)
             collectionSeenBefore = True
         except ValueError:
             collectionSeenBefore = False
@@ -225,24 +234,24 @@ class ShapeLearnerManager:
         #change bounds back to the initial ones 
         newBounds = self.shapeLearners_currentCollection[shapeType_index].initialBounds
         self.shapeLearners_currentCollection[shapeType_index].setParameterBounds(newBounds)
-        print('Changing bounds on shape ' + self.shapeAtIndexInCurrentCollection(shapeType_index) + ' from ' + str(
+        shapeLogger.debug('Changing bounds on shape ' + self.shapeAtIndexInCurrentCollection(shapeType_index) + ' from ' + str(
             currentBounds) + ' to ' + str(newBounds))
 
     def generateSimulatedFeedback(self, shapeType_index, newShape, newParamValue):
         return self.shapeLearners_currentCollection[shapeType_index].generateSimulatedFeedback(newShape, newParamValue)
-        
+
     def save_all(self, shapeIndex_messageFor):
         shape_messageFor = self.shapeAtIndexInAllShapesLearnt(shapeIndex_messageFor)
-        if (shape_messageFor < 0 ):
-            print('Ignoring demonstration because not for valid shape type')
+        if (shape_messageFor < 0):
+            shapeLogger.warning('Ignoring demonstration because not for valid shape type')
             return -1
         else:
             self.shapeLearners_currentCollection[shapeIndex_messageFor].save_all()
-            
+
     def save_demo(self, shapeIndex_messageFor):
         shape_messageFor = self.shapeAtIndexInAllShapesLearnt(shapeIndex_messageFor)
-        if (shape_messageFor < 0 ):
-            print('Ignoring demonstration because not for valid shape type')
+        if (shape_messageFor < 0):
+            shapeLogger.warning('Ignoring demonstration because not for valid shape type')
             return -1
         else:
             self.shapeLearners_currentCollection[shapeIndex_messageFor].save_demo()

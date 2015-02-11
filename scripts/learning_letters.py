@@ -123,33 +123,32 @@ class UserInputCapture(App):
 ###---------------------------------------------- WORD LEARNING SETTINGS
 
 def generateSettings(shapeType):
-    paramsToVary = [3];            #Natural number between 1 and numPrincipleComponents, representing which principle component to vary from the template
-    initialBounds_stdDevMultiples = numpy.array([[-6, 6]]);  #Starting bounds for paramToVary, as multiples of the parameter's observed standard deviation in the dataset
-    doGroupwiseComparison = True; #instead of pairwise comparison with most recent two shapes
-    initialParamValue = numpy.NaN
-    initialBounds = numpy.array([[numpy.NaN, numpy.NaN]])
-
+    paramsToVary = [3];
+    initialBounds_stdDevMultiples = np.array([[-6, 6]]);
+    doGroupwiseComparison = True;
+    initialParamValue = np.NaN
+    initialBounds = np.array([[np.NaN, np.NaN]])
     init_datasetFile = init_datasetDirectory + '/' + shapeType + '.dat'
     update_datasetFile = update_datasetDirectory + '/' + shapeType + '.dat'
     demo_datasetFile = demo_datasetDirectory + '/' + shapeType + '.dat'
-    
+
     if not os.path.exists(init_datasetFile):
         raise RuntimeError("Dataset not found for shape" + shapeType)
-        
+
     if not os.path.exists(update_datasetFile):
         try:
             with open(update_datasetFile, 'w') as f:
                 pass
         except IOError:
                     raise RuntimeError("no writing permission for file"+update_datasetFile)
-                    
+
     if not os.path.exists(demo_datasetFile):
         try:
             with open(demo_datasetFile, 'w') as f:
                 pass
         except IOError:
                     raise RuntimeError("no writing permission for file"+demo_datasetFile)
-        
+
     try:
         datasetParam = init_datasetDirectory + '/params.dat'
         with open(datasetParam, 'r') as f:
@@ -162,19 +161,19 @@ def generateSettings(shapeType):
                 else:
                     break
             if test:
-                s = f.readline().replace('\n','')
-                initialParamValue = (float)(s)
+                u = f.readline().replace('\n','')
+                initialParamValue = [(float)(s) for s in u.split(',')]
             else:
-                initialParamValue = 0.0
+                initialParamValue = [0.0,0.0,0.0,0.0,0.0]
                 print("parameters not found for shape "+ shapeType +'\n'+'Default : 0.0')
-            
+
     except IOError:
         raise RuntimeError("no reading permission for file"+datasetParam)
 
     settings = SettingsStruct(shape_learning = shapeType,
                                 paramsToVary = paramsToVary, 
                                 doGroupwiseComparison = True,
-                                initDatasetFile = init_datasetFile, 
+                                initDatasetFile = init_datasetFile,
                                 updateDatasetFiles = [update_datasetFile,demo_datasetFile],
                                 paramFile = datasetParam,
                                 initialBounds = initialBounds, 

@@ -32,7 +32,7 @@ SettingsStruct = recordtype('SettingsStruct',
                             ['shape_learning',  #String representing the shape which the object is learning
                              'initDatasetFile',  #Path to the dataset file that will be used to initialize the matrix for PCA
                              'updateDatasetFiles',  #List of path -- or single path-- to dataset that will be updated with demo shapes
-                             'paramFile',
+                             'paramFile', #Path to the dataset file 'params.dat' inside which we save the learned parameters
                              'paramsToVary',
                              #Natural number between 1 and number of parameters in the associated ShapeModeler, representing the parameter to learn
                              'doGroupwiseComparison',  #instead of pairwise comparison with most recent two shapes
@@ -74,12 +74,9 @@ class ShapeLearner:
         self.doGroupwiseComparison = settings.doGroupwiseComparison
         self.shape_learning = settings.shape_learning
         self.minParamDiff = settings.minParamDiff
-        
+
         self.initialParamValue = settings.initialParamValue
         self.params = numpy.zeros((self.numPrincipleComponents, 1))
-
-        print self.initialParamValue
-        print self.params
 
         for i in range(self.numPrincipleComponents):
             self.params[i][0] = -self.initialParamValue[i]

@@ -221,7 +221,7 @@ class ShapeModeler:
                         f.write('\n')
             except IOError:
                 raise RuntimeError("no writing permission for file"+filename)
-                    
+
     def save_demo(self):
         """ save the demo shape into a new data set.
         """
@@ -243,7 +243,7 @@ class ShapeModeler:
                             f.write('\n')
                 except IOError:
                     raise RuntimeError("no writing permission for file"+filename)
-      
+
     def save_params(self, params, letter):
         """save parameters in new dataset
         """
@@ -265,9 +265,7 @@ class ShapeModeler:
                         f.write(lines[i])
                         test = lines[i].replace('[','').replace(']\n','')==letter
                         if test:
-                            print 'getting '+str(params)+' ...'
                             lines[i+1] = str(params).replace('[','').replace(']','')+'\n'
-                            print '... and saving that shit : '+ lines[i+1]
             except IOError:
                 raise RuntimeError("no writing permission for file"+filename)
 

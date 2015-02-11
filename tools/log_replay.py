@@ -156,7 +156,7 @@ if __name__ == "__main__":
             print userShape
             userShape = np.reshape(userShape, (-1, 1)); #explicitly make it 2D array with only one column
             shape = wordManager.respondToDemonstration(0, userShape)
-            wordManager.save_all(letter)
+            wordManager.save_all(0)
 
 
 

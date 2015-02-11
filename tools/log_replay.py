@@ -106,6 +106,12 @@ def generateSettings(shapeType):
 
 
 
+def showShape(shape ):
+    plt.figure(1)
+    plt.clf()
+    ShapeModeler.normaliseAndShowShape(shape)#.path)
+
+
 
 if __name__ == "__main__":
 
@@ -123,38 +129,46 @@ if __name__ == "__main__":
                 if type=='demonstration':
                     demo_letters.setdefault(letter,[]).append(path)
 
-#for letter, value in demo_letters.items():
-#    print("%s: %s" %(letter,str(value)))
-
-
-    for letter, value  in demo_letters.items():
-
-        import inspect
-        fileName = inspect.getsourcefile(ShapeModeler)
-        installDirectory = fileName.split('/lib')[0]
-        #datasetDirectory = installDirectory + '/share/shape_learning/letter_model_datasets/uji_pen_chars2'
-        init_datasetDirectory = installDirectory + '/share/shape_learning/letter_model_datasets/alexis_set_for_children'
-        update_datasetDirectory = installDirectory + '/share/shape_learning/letter_model_datasets/alexis_set_for_children'
-        demo_datasetDirectory = installDirectory + '/share/shape_learning/letter_model_datasets/diego_set'
-
-        if not os.path.exists(init_datasetDirectory):
-            raise RuntimeError("initial dataset directory not found !")
-        if not os.path.exists(update_datasetDirectory):
-            os.makedir(update_datasetDirectory)
-
-        wordManager = ShapeLearnerManager(generateSettings)
-        wordSeenBefore = wordManager.newCollection(letter)
-
-
-        shape = wordManager.startNextShapeLearner()
-
+    for bad_letter, value  in demo_letters.items():
 
         for path in value:
-            print('Received demo for letter ' + letter)
+
+            plt.ion()
 
             userShape = path
-            print userShape
-            userShape = np.reshape(userShape, (-1, 1)); #explicitly make it 2D array with only one column
+
+            userShape = np.reshape(userShape, (-1, 1));
+            showShape(userShape)
+
+            letter = raw_input('letter ? ')
+
+
+
+            import inspect
+            fileName = inspect.getsourcefile(ShapeModeler)
+            installDirectory = fileName.split('/lib')[0]
+            #datasetDirectory = installDirectory + '/share/shape_learning/letter_model_datasets/uji_pen_chars2'
+            init_datasetDirectory = installDirectory + '/share/shape_learning/letter_model_datasets/alexis_set_for_children'
+            update_datasetDirectory = installDirectory + '/share/shape_learning/letter_model_datasets/alexis_set_for_children'
+            demo_datasetDirectory = installDirectory + '/share/shape_learning/letter_model_datasets/diego_set'
+
+            if not os.path.exists(init_datasetDirectory):
+                raise RuntimeError("initial dataset directory not found !")
+            if not os.path.exists(update_datasetDirectory):
+                os.makedir(update_datasetDirectory)
+
+            wordManager = ShapeLearnerManager(generateSettings)
+            wordSeenBefore = wordManager.newCollection(letter)
+
+            shape = wordManager.startNextShapeLearner()
+
+
+            # learning part :
+            print('Received demo for letter ' + letter)
+
+            #userShape = path
+            #print userShape
+            #userShape = np.reshape(userShape, (-1, 1)); #explicitly make it 2D array with only one column
             shape = wordManager.respondToDemonstration(0, userShape)
             wordManager.save_all(0)
 

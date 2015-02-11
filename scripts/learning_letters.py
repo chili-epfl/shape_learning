@@ -176,6 +176,7 @@ def generateSettings(shapeType):
                                 doGroupwiseComparison = True,
                                 initDatasetFile = init_datasetFile, 
                                 updateDatasetFiles = [update_datasetFile,demo_datasetFile],
+                                paramFile = datasetParam,
                                 initialBounds = initialBounds, 
                                 initialBounds_stdDevMultiples = initialBounds_stdDevMultiples,
                                 initialParamValue = initialParamValue, 

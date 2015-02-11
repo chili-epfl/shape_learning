@@ -84,8 +84,9 @@ def generateSettings(shapeType):
                 else:
                     break
             if test:
-                s = f.readline().replace('\n','')
-                initialParamValue = (float)(s)
+                u = f.readline().replace('\n','')
+                initialParamValue = [(float)(s) for s in u.split(',')]
+                print initialParamValue
             else:
                 initialParamValue = 0.0
                 print("parameters not found for shape "+ shapeType +'\n'+'Default : 0.0')
@@ -96,8 +97,9 @@ def generateSettings(shapeType):
     settings = SettingsStruct(shape_learning = shapeType,
                                 paramsToVary = paramsToVary, 
                                 doGroupwiseComparison = True,
-                                initDatasetFile = init_datasetFile, 
+                                initDatasetFile = init_datasetFile,
                                 updateDatasetFiles = [update_datasetFile,demo_datasetFile],
+                                paramFile = datasetParam,
                                 initialBounds = initialBounds, 
                                 initialBounds_stdDevMultiples = initialBounds_stdDevMultiples,
                                 initialParamValue = initialParamValue, 
@@ -129,18 +131,18 @@ if __name__ == "__main__":
                 if type=='demonstration':
                     demo_letters.setdefault(letter,[]).append(path)
 
-    for bad_letter, value  in demo_letters.items():
+    for letter, value  in demo_letters.items():
 
         for path in value:
 
-            plt.ion()
+            #plt.ion()
 
             userShape = path
 
             userShape = np.reshape(userShape, (-1, 1));
-            showShape(userShape)
+            #showShape(userShape)
 
-            letter = raw_input('letter ? ')
+            #letter = raw_input('letter ? ')
 
 
 
@@ -171,7 +173,7 @@ if __name__ == "__main__":
             #userShape = np.reshape(userShape, (-1, 1)); #explicitly make it 2D array with only one column
             shape = wordManager.respondToDemonstration(0, userShape)
             wordManager.save_all(0)
-
+            wordManager.save_params(0)
 
 
 

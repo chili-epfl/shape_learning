@@ -32,6 +32,7 @@ SettingsStruct = recordtype('SettingsStruct',
                             ['shape_learning',  #String representing the shape which the object is learning
                              'initDatasetFile',  #Path to the dataset file that will be used to initialize the matrix for PCA
                              'updateDatasetFiles',  #List of path -- or single path-- to dataset that will be updated with demo shapes
+                             'paramFile',
                              'paramsToVary',
                              #Natural number between 1 and number of parameters in the associated ShapeModeler, representing the parameter to learn
                              'doGroupwiseComparison',  #instead of pairwise comparison with most recent two shapes
@@ -54,6 +55,7 @@ class ShapeLearner:
         print(settings.initDatasetFile)
         self.shapeModeler = ShapeModeler(init_filename=settings.initDatasetFile,
                                          update_filenames=settings.updateDatasetFiles,
+                                         param_filename=settings.paramFile,
                                          num_principle_components=self.numPrincipleComponents)
 
         self.bounds = settings.initialBounds
@@ -75,7 +77,12 @@ class ShapeLearner:
         
         self.initialParamValue = settings.initialParamValue
         self.params = numpy.zeros((self.numPrincipleComponents, 1))
-        self.params[0][0] = -self.initialParamValue
+
+        print self.initialParamValue
+        print self.params
+
+        for i in range(self.numPrincipleComponents):
+            self.params[i][0] = -self.initialParamValue[i]
 
         self.initialBounds = deepcopy(self.bounds)
         self.converged = False
@@ -85,7 +92,7 @@ class ShapeLearner:
     ### ----------------------------------------------------- START LEARNING
     def startLearning(self):
         #make initial shape
-        if (numpy.isnan(self.initialParamValue)):
+        if (numpy.isnan(self.initialParamValue[0])):
             [shape, paramValues] = self.shapeModeler.makeRandomShapeFromUniform(self.params, self.paramsToVary,
                                                                                 self.bounds)
             self.params = paramValues
@@ -318,3 +325,9 @@ class ShapeLearner:
     
     def save_demo(self):
         self.shapeModeler.save_demo()
+
+    def save_params(self):
+        paramValue = []
+        for i in range(self.numPrincipleComponents):
+             paramValue.append(-self.params[i][0])
+        self.shapeModeler.save_params(paramValue, self.shape_learning)

@@ -37,7 +37,7 @@ numPoints_shapeModeler = 70
 
 #actions = re.compile('201\d-\d\d-\d\d (?P<time>\d\d:\d\d:\d\d).*INFO - (?P<letter>\w):.*')
 
-action = re.compile('.*INFO - (?P<letter>\w):.*(?P<type>demonstration|generated|learning).*arams: (?P<params>\[[\d., -]*\]). Path: (?P<path>\[[\d., -]*\])')
+action = re.compile('.*INFO - (?P<letter>\w):.*(?P<type>demonstration|generated|learning).*arams: (?P<params>\[[\de., -]*\]). Path: (?P<path>\[[\de., -]*\])')
 
 
 actions_letters = {}

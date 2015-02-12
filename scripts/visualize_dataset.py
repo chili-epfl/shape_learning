@@ -38,11 +38,12 @@ def prepareShapesModel(datasetDirectory, regexp=".*"):
     datasets = glob.glob(datasetDirectory + '/*.dat')
 
     for dataset in datasets:
-        name = os.path.splitext(os.path.basename(dataset))[0]
+        if "params" not in dataset:
+            name = os.path.splitext(os.path.basename(dataset))[0]
 
-        if nameFilter.match(name):
-            shapeModeler = ShapeModeler(filename = dataset, num_principle_components = 3)
-            shapes[name] = shapeModeler
+            if nameFilter.match(name):
+                shapeModeler = ShapeModeler(init_filename = dataset, num_principle_components = 5)
+                shapes[name] = shapeModeler
 
     return shapes
 
@@ -55,7 +56,7 @@ def parse_parameters(filename):
         for l in f.readlines():
             if l.startswith("#") or l.rstrip()=="": continue
             if l.startswith("["): key = l[1:-2]
-            else: params[key] = np.array([[float(p)] for p in l.split()])
+            else: params[key] = np.array([[float(p)] for p in l.split(',')])
 
     return params
 
@@ -69,7 +70,7 @@ if __name__ == "__main__":
     initial_params = {}
     if args.parameters:
         initial_params = parse_parameters(args.parameters)
-    print(initial_params)
+        print("Got initial params for letters %s" % initial_params.keys())
 
     if(not datasetDirectory):
         import inspect

@@ -7,7 +7,7 @@ from shape_learning.shape_modeler import ShapeModeler #for normaliseShapeHeight(
 
 import os.path
 
-import numpy
+import numpy as np
 import matplotlib.pyplot as plt
 
 from kivy.config import Config
@@ -44,13 +44,13 @@ def downsampleShape(shape,numDesiredPoints,xyxyFormat=False):
         x_shape = shape[0:numPointsInShape]
         y_shape = shape[numPointsInShape:]
 
-    if isinstance(x_shape,numpy.ndarray): #convert arrays to lists for interp1d
+    if isinstance(x_shape,np.ndarray): #convert arrays to lists for interp1d
         x_shape = (x_shape.T).tolist()[0]
         y_shape = (y_shape.T).tolist()[0]
 
     #make shape have the same number of points as the shape_modeler
-    t_current = numpy.linspace(0, 1, numPointsInShape)
-    t_desired = numpy.linspace(0, 1, numDesiredPoints)
+    t_current = np.linspace(0, 1, numPointsInShape)
+    t_desired = np.linspace(0, 1, numDesiredPoints)
     f = interpolate.interp1d(t_current, x_shape, kind='cubic')
     x_shape = f(t_desired)
     f = interpolate.interp1d(t_current, y_shape, kind='cubic')
@@ -93,7 +93,7 @@ class MyPaintWidget(Widget):
             
         print('Received demo for letter ' + shapeType)
 
-        userShape = numpy.reshape(userShape, (-1, 1)); #explicitly make it 2D array with only one column
+        userShape = np.reshape(userShape, (-1, 1)); #explicitly make it 2D array with only one column
         shape = wordManager.respondToDemonstration(shapeIndex_demoFor, userShape)
         wordManager.save_all(shapeIndex_demoFor)
         

@@ -255,3 +255,12 @@ class ShapeLearnerManager:
             return -1
         else:
             self.shapeLearners_currentCollection[shapeIndex_messageFor].save_demo()
+
+
+    def save_params(self, shapeIndex_messageFor):
+        shape_messageFor = self.shapeAtIndexInAllShapesLearnt(shapeIndex_messageFor)
+        if (shape_messageFor < 0):
+            shapeLogger.warning('Ignoring demonstration because not for valid shape type')
+            return -1
+        else:
+            self.shapeLearners_currentCollection[shapeIndex_messageFor].save_params()

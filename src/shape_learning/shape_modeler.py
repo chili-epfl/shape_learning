@@ -18,7 +18,8 @@ class ShapeModeler:
                  shape_name=None, 
                  samples=None, 
                  init_filename=None,
-                 update_filenames=None, 
+                 update_filenames=None,
+                 param_filename=None,
                  num_principle_components=10):
         """ Initialize a shape modeler
 
@@ -48,7 +49,12 @@ class ShapeModeler:
         elif init_filename:
             self.makeDataMatrix(init_filename)
 
-        self.update_filenames = update_filenames
+        if update_filenames:
+            self.update_filenames = update_filenames
+
+        if param_filename:
+            self.param_filename = param_filename
+
         if not isinstance(update_filenames,list):
                 self.update_filenames = [update_filenames]
 
@@ -215,7 +221,7 @@ class ShapeModeler:
                         f.write('\n')
             except IOError:
                 raise RuntimeError("no writing permission for file"+filename)
-                    
+
     def save_demo(self):
         """ save the demo shape into a new data set.
         """
@@ -237,7 +243,31 @@ class ShapeModeler:
                             f.write('\n')
                 except IOError:
                     raise RuntimeError("no writing permission for file"+filename)
-        
+
+    def save_params(self, params, letter):
+        """save parameters in new dataset
+        """
+        if self.param_filename:
+            filename = self.param_filename
+            print('saving params in'+filename)
+            if not os.path.exists(filename):
+                raise RuntimeError("path to dataset"+filename+"not found")
+            lines = []
+            try:
+                with open(filename, 'rb') as f:
+                    for i in range(52):
+                        lines.append(f.readline())
+            except IOError:
+                raise RuntimeError("no reading permission for file"+filename)
+            try:
+                with open(filename, 'wb') as f:
+                    for i in range(52):
+                        f.write(lines[i])
+                        test = lines[i].replace('[','').replace(']\n','')==letter
+                        if test:
+                            lines[i+1] = str(params).replace('[','').replace(']','')+'\n'
+            except IOError:
+                raise RuntimeError("no writing permission for file"+filename)
 
     @staticmethod
     def showShape(shape, block=False):

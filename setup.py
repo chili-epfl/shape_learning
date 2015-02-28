@@ -15,5 +15,6 @@ setup(name='shape_learning',
       packages=['shape_learning'],
       data_files=[('share/shape_learning/letter_model_datasets/uji_pen_chars2', glob.glob("share/letter_model_datasets/uji_pen_chars2/*")),
                   ('share/shape_learning/letter_model_datasets/alexis_set_for_children', glob.glob("share/letter_model_datasets/alexis_set_for_children/*")),
+		  ('share/shape_learning/letter_model_datasets/uji_pen_subset', glob.glob("share/letter_model_datasets/uji_pen_subset/*")),
                   ('share/doc/shape_learning', ['AUTHORS', 'LICENSE', 'README.md'])]
       )

@@ -12,6 +12,11 @@ import os.path
 import matplotlib.pyplot as plt
 from matplotlib.mlab import PCA
 
+from sklearn.cluster import DBSCAN
+from sklearn import metrics
+from sklearn.datasets.samples_generator import make_blobs
+from sklearn.preprocessing import StandardScaler
+from sklearn.cluster import MeanShift
 
 class ShapeModeler:
     def __init__(self,
@@ -122,6 +127,27 @@ class ShapeModeler:
         self.principleComponents = numpy.real(eigVecs[:, 0:self.num_principle_components])
         self.parameterVariances = numpy.real(eigVals[0:self.num_principle_components])
         self.meanShape = self.dataMat.mean(0).reshape((self.numPointsInShapes * 2, 1))
+
+    def getEuclidianCenter(self):
+        """ Get the euclidian mean point by point
+        return a vector of 70 mean-points"""
+        return numpy.mean(self.dataMat,0),numpy.var(self.dataMat,0)
+
+    def getEuclidianDist(self, shape):
+        """ Get the euclidian distance between a shape and the mean shape
+        of the dataset, point by point, divided by variance for normalization """
+        #data_mean, data_var = self.getEuclidianCenter()
+        dist = self.meanShape - shape
+        #sigma =numpy.sqrt(self.parameterVariances)
+        return numpy.sum(dist*dist)
+
+    def getDistToRef(self,shape):
+        params1,_ = self.decomposeShape(self.dataMat[0].reshape((self.numPointsInShapes * 2, 1)))
+        params2,_ = self.decomposeShape(shape)
+        dist = numpy.array(params1)-numpy.array(params2)
+        var = numpy.abs(numpy.array(self.getParameterVariances()))
+        ndist = dist*dist/var
+        return numpy.sum(ndist[:1])
 
     def getParameterVariances(self):
         """ Return the variances associated which each of the top principle components
@@ -269,6 +295,49 @@ class ShapeModeler:
             except IOError:
                 raise RuntimeError("no writing permission for file"+filename)
 
+
+    def paramMatrix(self):
+        paramMat = numpy.zeros((self.numShapesInDataset,self.num_principle_components))
+        for i in range(self.numShapesInDataset):
+            shape = self.dataMat[i,:]
+            params,_ = self.decomposeShape(shape.reshape((self.numPointsInShapes * 2, 1)))
+            paramMat[i,:] = params[:,0]
+        return paramMat
+
+    def getVar(self):
+        return numpy.var(self.dataMat,0)
+
+    def getClusters(self):
+        X = self.dataMat
+
+        ms = MeanShift(bandwidth=1.9).fit(X)
+        cluster_centers = ms.cluster_centers_
+        n_clusters = len(cluster_centers)
+        labels = ms.labels_
+        var = []
+        for i in range(n_clusters):
+            var.append(numpy.var(X[labels==i]))
+        var = numpy.array(var)
+
+        return cluster_centers, n_clusters, var
+
+    def getMinDist(self,shape):
+
+        clusters,_,var = self.getClusters()
+        scores = []
+        for i in range(len(clusters)):
+            dist = (clusters[i,:].reshape((self.numPointsInShapes * 2, 1))-shape)
+            scores.append(numpy.sum(dist*dist))
+        return numpy.min(numpy.array(scores))
+
+    def getCenters(self):
+
+        clusters,_,_ = self.getClusters()
+        centers = [clusters[i,:].reshape((self.numPointsInShapes * 2, 1)) for i in range(len(clusters))]
+        return centers
+
+
+
     @staticmethod
     def showShape(shape, block=False):
         """ Show shape with random colour
@@ -361,3 +430,18 @@ class ShapeModeler:
         shape = ShapeModeler.normaliseShape(shape)
         ShapeModeler.showShape(shape, block)
 
+    @staticmethod
+    def showShape_score(shape, scores, block=False):
+        """ Show shape with random colour
+        """
+        numPointsInShape = len(shape) / 2
+        x_shape = numpy.reshape(numpy.array(shape[0:numPointsInShape]),(numPointsInShape))
+        y_shape = numpy.reshape(numpy.array(shape[numPointsInShape:]),(numPointsInShape))
+
+        #plt.plot(x_shape, -y_shape, c=numpy.random.rand(3, 1))
+        #plt.axis([-1, 1, -1, 1])
+        if block:
+            plt.show(block=block)  # block=False <-> plt.draw
+        else:
+            plt.errorbar(x_shape,-y_shape, yerr=scores/numpy.max(scores))
+            plt.draw()

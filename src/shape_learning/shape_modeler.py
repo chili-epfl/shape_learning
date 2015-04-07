@@ -308,6 +308,9 @@ class ShapeModeler:
         return numpy.var(self.dataMat,0)
 
     def getClusters(self):
+        """
+        get the different clusters of the letter
+        """
         X = self.dataMat
 
         ms = MeanShift(bandwidth=1.9).fit(X)
@@ -322,6 +325,7 @@ class ShapeModeler:
         return cluster_centers, n_clusters, var
 
     def getMinDist(self,shape):
+        """give the distance between the demo and the closest cluster of the letter"""
 
         clusters,_,var = self.getClusters()
         scores = []
@@ -412,6 +416,35 @@ class ShapeModeler:
 
         #normalise shape
         scale = y_range
+        if scale < 1e-10:
+            print('Warning: shape is probably a bunch of points on top of each other...')
+
+        x_shape = x_shape / scale
+        y_shape = y_shape / scale
+
+        newShape = numpy.zeros(shape.shape)
+        newShape[0:numPointsInShape] = x_shape
+        newShape[numPointsInShape:] = y_shape
+        return newShape
+
+    @staticmethod
+    def normaliseShapeWidth(shape):
+        """ Normalise shape so that width is 1 
+        """
+        numPointsInShape = len(shape) / 2
+        x_shape = shape[0:numPointsInShape]
+        y_shape = shape[numPointsInShape:]
+
+        # shift so centre of shape is at (0,0)
+        x_range = max(x_shape) - min(x_shape)
+        y_range = max(y_shape) - min(y_shape)
+        x_centre = (max(x_shape) - x_range / 2)
+        y_centre = (max(y_shape) - y_range / 2)
+        x_shape = x_shape - x_centre
+        y_shape = y_shape - y_centre
+
+        #normalise shape
+        scale = x_range
         if scale < 1e-10:
             print('Warning: shape is probably a bunch of points on top of each other...')
 

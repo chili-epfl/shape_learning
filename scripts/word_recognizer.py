@@ -87,8 +87,8 @@ def generateSettings(shapeType):
 import inspect
 fileName = inspect.getsourcefile(ShapeModeler)
 installDirectory = fileName.split('/lib')[0]
-init_datasetDirectory = installDirectory + '/share/shape_learning/letter_model_datasets/alexis_set_for_children'
-update_datasetDirectory = installDirectory + '/share/shape_learning/letter_model_datasets/alexis_set_for_children'
+init_datasetDirectory = installDirectory + '/share/shape_learning/letter_model_datasets/new_dat'
+update_datasetDirectory = installDirectory + '/share/shape_learning/letter_model_datasets/new_dat'
 demo_datasetDirectory = installDirectory + '/share/shape_learning/letter_model_datasets/diego_set'
 if not os.path.exists(init_datasetDirectory):
     raise RuntimeError("initial dataset directory not found !")
@@ -109,7 +109,8 @@ nb_param = 10
 
 spaces = {}
 
-abc = ['a','b','c','d','e','f','g','h','i','j','k','l','m','n','o','p','q','r','s','t','u','v','w','x','y','z']
+abc = ['a','b','c','d','e','f','g','h','i','j','k','l','m','n','o','p','q','r','s','t','u','v','w','x','y','z','r#','r@'\
+        ,'v#','v@','on','om','oe','ll']
 for letter in abc:
     (shapeType, init_datasetFile, update_datasetFiles, datasetParam) = generateSettings(letter)
     spaces[letter] = ShapeModeler(init_filename=init_datasetFile,
@@ -135,22 +136,56 @@ def downsampleShape(shape,numDesiredPoints,xyxyFormat=False):
     #make shape have the same number of points as the shape_modeler
     t_current = np.linspace(0, 1, numPointsInShape)
     t_desired = np.linspace(0, 1, numDesiredPoints)
-    f = interpolate.interp1d(t_current, x_shape, kind='cubic')
+    f = interpolate.interp1d(t_current, x_shape)#, kind='cubic')
     x_shape = f(t_desired)
-    f = interpolate.interp1d(t_current, y_shape, kind='cubic')
+    f = interpolate.interp1d(t_current, y_shape)#, kind='cubic')
     y_shape = f(t_desired)
 
     shape = []
-    shape[0:numPoints_shapeModeler] = x_shape
-    shape[numPoints_shapeModeler:] = y_shape
+    shape[0:numDesiredPoints] = x_shape
+    shape[numDesiredPoints:] = y_shape
 
     return shape
 
+def xyxy_to_xxyy(shape):
+    numPointsInShape = len(shape)/2
+
+    x_shape = shape[0::2]
+    y_shape = shape[1::2]
+
+    if isinstance(x_shape,np.ndarray): #convert arrays to lists for interp1d
+        x_shape = (x_shape.T).tolist()[0]
+        y_shape = (y_shape.T).tolist()[0]
+
+    t_current = np.linspace(0, 1, numPointsInShape)
+    f = interpolate.interp1d(t_current, x_shape)#, kind='cubic')
+    x_shape = f(t_current)
+    f = interpolate.interp1d(t_current, y_shape)#, kind='cubic')
+    y_shape = f(t_current)
+
+    shape = []
+    shape[0:numPointsInShape] = x_shape
+    shape[numPointsInShape:] = y_shape
+
+    return shape
 
 userShape = []
+newUserShape = []
+gaps = []
+
+letter_len = 0
+
+words = []
+x_pos = []
+y_pos_min = []
+
 class MyPaintWidget(Widget):
 
     def on_touch_down(self, touch):
+        global is_right
+        global gaps
+        global letter_len
+
         with self.canvas:
 
             #self.canvas.clear()
@@ -158,22 +193,110 @@ class MyPaintWidget(Widget):
             d = 30.
             touch.ud['line'] = Line(points=(touch.x, touch.y))
 
+        if len(gaps)%2==1:
+            gaps += [(touch.x, -touch.y)]
+
+
     def on_touch_move(self, touch):
         global userShape
+        global newUserShape
+
         touch.ud['line'].points += [touch.x, touch.y]
         userShape += [touch.x, -touch.y]
+        newUserShape += [touch.x, -touch.y]
+
 
     def on_touch_up(self, touch):
+        global gaps
+        global letter_len
         global userShape
+        global newUserShape
+        global words
+
+        if touch.is_double_tap:
+
+            if len(gaps)>4:
+                gaps = gaps[:-4]
+            else:
+                gaps = []
+
+            if len(userShape)>4:
+                letter_len, word = self.read(userShape)
+                words += word
+                print words
+                gaps = []
+                userShape = []
+                newUserShape = []
+
+            else:
+                print 'not enought points to read a word !'
+                gaps = []
+                userShape = []
+                newUserShape = []
+
+            self.canvas.clear()
+            words = []
+
+
+        else:
+
+            previousShape = userShape[:-len(newUserShape)]
+
+            if len(gaps)>1:
+                gap1 = gaps[-2]
+                gap2 = gaps[-1]
+                gap = np.sqrt((gap1[0]-gap2[0])*(gap1[0]-gap2[0]) + 0*(gap1[1]-gap2[1])*(gap1[1]-gap2[1]))
+
+                if len(previousShape)>4:
+                    #userShape = previousShape
+                    letter_len, word = self.read(previousShape)
+
+                    if gap>letter_len:
+                        words+=word
+                        words+=[' ']
+                        #print 'SPAAAAAACE !!!!!!'
+                        userShape = newUserShape
+
+
+            if len(gaps)%2==0:
+                gaps += [(touch.x, -touch.y)]
+
+            #if  len(userShape)>4:
+            #    letter_len = self.read(userShape)
+
+            newUserShape = []
+            #print len(userShape)
+
+
+    def read(self,userShape):
+        global words
 
         word = []
         total_score =0
-        rest = userShape
 
-        scan = downsampleShape(userShape, numPoints_shapeModeler,xyxyFormat=True)
-        shapeCentre = ShapeModeler.getShapeCentre(scan)
-        scan = np.reshape(scan, (-1, 1)); #explicitly make it 2D array with only one column
-        scan = ShapeModeler.normaliseShapeHeight(np.array(scan))
+        #scores = np.array(separator(userShape))
+        numPointsInShape = len(userShape)/2
+
+        complete = xyxy_to_xxyy(userShape)
+        complete = np.reshape(complete,(-1,1))
+        #complete = ShapeModeler.normaliseShapeHeight(np.array(complete))
+
+        half_len_scan = max([10,int(len(complete)/14)])
+        if half_len_scan%2>0:
+            half_len_scan+=1
+        #print half_len_scan
+
+
+        scan = downsampleShape(userShape, half_len_scan, xyxyFormat=True)
+        scan = np.reshape(scan, (-1, 1)) #explicitly make it 2D array with only one column
+        scan = ShapeModeler.normaliseShapeWidth(np.array(scan))
+
+        #print len(scan)
+
+        if len(complete)<len(scan):
+            complete=scan
+
+        numPointsInScan = len(scan)/2
 
         scores = np.array(separator(scan))
 
@@ -184,14 +307,17 @@ class MyPaintWidget(Widget):
         indices = np.array(range(len(scores)))
         sep = indices[scores>0]
         #print zip(sep[:-1],sep[1:])
-        
+
         for i in sep:
             x = scan[i]
-            if len(scan[scan[i:numPoints_shapeModeler]<x])>0:
+            if len(scan[scan[i:numPointsInScan]<x])>0:
                 scores[i]=0
             if len(scan[scan[:i]>x])>0:
                 scores[i]=0
-        
+
+        scores[0]=1
+        scores[-1]=1
+
         u = True
         while u:
             u = False
@@ -204,18 +330,29 @@ class MyPaintWidget(Widget):
                     else:
                         scores[i] = 0
 
-        plt.clf()
-        ShapeModeler.showShape_score(scan,scores)
+        #plt.clf()
+        #ShapeModeler.showShape_score(scan,scores)
+        #ShapeModeler.showShape(complete)
 
         word = []
+        word_score=[]
+
+        #print len(complete)/len(scan)
 
         sep = indices[scores>0]
         for i,j in zip(sep[:-1],sep[1:]):
 
-            shape = scan[i:j+1].T.tolist()[0] + scan[numPoints_shapeModeler+i:numPoints_shapeModeler+j+1].T.tolist()[0]
+            ii = int(float(i)/numPointsInScan*numPointsInShape)
+            jj = int(float(j)/numPointsInScan*numPointsInShape)+1
+
+            #print ii
+            #print jj
+
+            # get the shape of the letter :
+            shape = complete[ii:jj+1].T.tolist()[0] + complete[numPointsInShape+ii:numPointsInShape+jj+1].T.tolist()[0]
             shape = downsampleShape(shape, numPoints_shapeModeler)
             shape = np.reshape(shape,(-1,1))
-            shape = ShapeModeler.normaliseShapeHeight(np.array(shape))
+            shape = ShapeModeler.normaliseShapeWidth(np.array(shape))
 
             best_letter = '?'
             errors = {}
@@ -227,21 +364,142 @@ class MyPaintWidget(Widget):
                 values.append(error)
 
             best_letter = min(errors, key = errors.get)
+            error = errors[best_letter]
+            word_score.append((best_letter,error))
+
+            threshold =10
+
+            #if best_letter in {'o','z'}:
+                #threshold=10
+
             word.append(best_letter)
 
+            '''if error<threshold:
+                word.append(best_letter)
+            else:
+                scores[j] = 0 #or ii, best should to add with the letter (left/right) with worst error
+            '''
 
-        print 'found ' + str(word) 
-        
+        #plt.clf()
+        #ShapeModeler.showShape_score(scan,scores)
 
-        print '######################'
-        print ''
-        userShape = []
-        self.canvas.remove(touch.ud['line'])
+        jump = False
+        true_word = []
+        for l1, l2 in zip(word[:-1],word[1:]):
+            if not jump:
+
+                if (l1=='r@' or l1=='v#' or l1=='s') and (l2=='r#' or l2=='z'):
+                    true_word.append('r')
+                    jump = True
+
+                elif l1=='v@' and (l2=='r@' or l2=='v#'):
+                    true_word.append('v')
+                    jump=True
+
+                elif (l1=='u' and (l2=='r@' or l2=='v#')) or (l1=='v@' and l2=='v'):
+                    true_word.append('w')
+                    jump=True
+
+                elif (l1=='i' or l1=='v@') and (l2=='i' or l2=='v@'):
+                    true_word.append('u')
+                    jump=True
+
+                elif (l1=='r@' or l1=='v#') and l2=='z':
+                    true_word.append('r')
+                    jump=True
+
+                elif (l1=='i' or l1=='e' or l1=='r#' or l1=='z') and (l2=='r@' or l2=='v#'):
+                    true_word.append('v')
+                    jump=True
+
+                elif (l1=='r@' or l1=='v#') and l2=='y':
+                    true_word.append('r')
+                    jump=True
+
+                elif (l1=='l' or l1=='d' or l1=='h' or l1=='v#') and (l2=='r@' or l2=='v#'):
+                    true_word.append('b')
+                    jump=True
+
+                elif l1=='l' and l2=='s':
+                    true_word.append('b')
+                    jump=True
+
+                elif l1=='o' and l2=='on':
+                    true_word.append('on')
+                    jump=True
+
+                elif l1=='o' and l2=='om':
+                    true_word.append('om')
+                    jump=True
+
+                elif l1=='oi' and l2=='i':
+                    true_word.append('o')
+                    true_word.append('u')
+                    jump=True
+
+                elif (l1=='r@' or l1=='v#') and l2=='w':
+                    true_word.append('r')
+                    true_word.append('a')
+                    jump=True
+
+                elif l1=='r#':
+                    true_word.append('r')
+
+                elif l1=='u':
+                    true_word.append('a')
+
+                elif l1=='v':
+                    true_word.append('o')
+
+                else:
+                    true_word.append(l1)
+            else:
+                jump = False
+        if not jump:
+            if word[-1]=='u':
+                true_word.append('a')
+            elif word[-1]=='v':
+                true_word.append('o')
+            else:
+                true_word.append(word[-1])
+
+        i=0
+        for letter in true_word:
+            if letter=='v@':
+                # take the seconde score !!
+                true_word[i] = 'i'
+            if letter=='v#' or letter=='r@':
+                true_word[i] = 'e'
+            if letter=='r#':
+                true_word[i] = 'r'
+            i+=1
+
+
+
+        #print 'found ' + str(true_word) 
+        #print word_score
+
+        #print '######################'
+        #print ''
+        #userShape = []
+        #self.canvas.clear()
+
+        pos1_x = float(complete[0])
+        pos1_y = float(complete[numPointsInShape])
+        pos2_x = float(complete[numPointsInShape-1])
+        pos2_y = float(complete[-1])
+
+        len_word = np.sqrt((pos1_x - pos2_x)*(pos1_x - pos2_x) + 0*(pos1_y - pos2_y) * (pos1_y - pos2_y))
+
+
+        return len_word/float(len(word))*1.5, true_word
 
 def separator(word):
 
-    X = word[0:numPoints_shapeModeler]
-    Y = word[numPoints_shapeModeler:]
+    numPointsInWord = len(word)/2
+
+    X = word[0:numPointsInWord]
+    Y = word[numPointsInWord:]
 
     if len(X)>3:
         scores = np.zeros(len(X))

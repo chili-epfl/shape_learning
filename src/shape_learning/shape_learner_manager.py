@@ -140,6 +140,7 @@ class ShapeLearnerManager:
             shapeLogger.info("%s: new demonstration.         Params: %s. Path: %s" % (shape_messageFor, params_demo.flatten().tolist(), shape.flatten().tolist()))
 
             paramsToVary = self.settings_shapeLearners_currentCollection[shapeIndex_messageFor].paramsToVary
+            # shape.path would be an array of paths
             shape = Shape(path=newPath,
                           shapeID=[], 
                           shapeType=shape_messageFor,
@@ -204,18 +205,25 @@ class ShapeLearnerManager:
         self.currentCollection = ""
         # check, for each letter, that we have the corresponding dataset
         for l in collection:
+            print l
+
+            self.generateSettings(l)
+            '''
             try:
                 self.generateSettings(l)
             except RuntimeError:
-                # no dataset for this letter!
+                raise RuntimeError( 'no dataset for this letter! <%s> '%l)
                 shapeLogger.error("No dataset available for letter <%s>. Skipping this letter." % l)
                 continue
+            '''
 
             self.currentCollection += l
 
         self.nextShapeLearnerToBeStarted = 0
 
         shapeLogger.info("Starting to work on word <%s>" % collection)
+
+        #print self.currentCollection
 
         try:
             self.collectionsLearnt.index(self.currentCollection)

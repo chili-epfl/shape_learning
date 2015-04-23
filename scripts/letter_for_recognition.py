@@ -25,9 +25,6 @@ parser = argparse.ArgumentParser(description='Learn a collection of letters in p
 parser.add_argument('word', action="store",
                 help='The word to be learnt')
 
-
-multi_stroke_letters = ['i','j','t']
-
 numPoints_shapeModeler = 70
 
 shapesLearnt = []
@@ -67,7 +64,6 @@ def downsampleShape(shape,numDesiredPoints,xyxyFormat=False):
 
 
 userShape = []
-userStroke = []
 class MyPaintWidget(Widget):
 
     def on_touch_down(self, touch):
@@ -81,38 +77,30 @@ class MyPaintWidget(Widget):
     def on_touch_move(self, touch):
         global userShape
         touch.ud['line'].points += [touch.x, touch.y]
-        userStroke += [touch.x, -touch.y]
+        userShape += [touch.x, -touch.y]
 
     def on_touch_up(self, touch):
-        global userStroke
+        global userShape
         touch.ud['line'].points
-        userShape.append(downsampleShape(userStroke,numPoints_shapeModeler,xyxyFormat=True))
-        userStroke = []
+        userShape = downsampleShape(userShape,numPoints_shapeModeler,xyxyFormat=True)
+        shapeCentre = ShapeModeler.getShapeCentre(userShape)
+        
+        for i in range(len(wordToLearn)):
+            if(shapeCentre[0] > (self.width/len(wordToLearn))*i):
+                shapeIndex_demoFor = i
 
-        if touch.is_double_tap:
+        shapeType = wordManager.shapeAtIndexInCurrentCollection(shapeIndex_demoFor)
+            
+        print('Received demo')
 
-            userShape = userShape[:-2]
+        userShape = np.reshape(userShape, (-1, 1)); #explicitly make it 2D array with only one column
+        shape = wordManager.respondToDemonstration(shapeIndex_demoFor, userShape)
+        wordManager.save_all(shapeIndex_demoFor)
+        
 
-            shapeType = wordManager.shapeAtIndexInCurrentCollection(0)
-
-            if shapeType in multi_stroke_letters:
-                """ Here manage multi_stroke_letters """
-
-            else:
-                x1 = 
-
-            print('Received demo')
-
-            for i in range(len(userShape)):
-                userShape[i] = np.reshape(userShape[i], (-1, 1)); #explicitly make it 2D array with only one column
-
-            # !!! shape.path is differnent now !
-            shape = wordManager.respondToDemonstration(0, userShape)
-            wordManager.save_all(0)
-
-            userShape = []
-            self.canvas.remove(touch.ud['line'])
-            showShape(shape, 0)
+        userShape = []
+        self.canvas.remove(touch.ud['line'])
+        showShape(shape, shapeIndex_demoFor)
 
 class UserInputCapture(App):
 
@@ -194,7 +182,7 @@ def generateSettings(shapeType):
                                 minParamDiff = 0.4)
     return settings
 
-def showShape(shape, shapeIndex):
+def showShape(shape,shapeIndex ):
     plt.figure(shapeIndex+1)
     plt.clf()
     ShapeModeler.normaliseAndShowShape(shape.path)
@@ -208,8 +196,8 @@ if __name__ == "__main__":
     fileName = inspect.getsourcefile(ShapeModeler)
     installDirectory = fileName.split('/lib')[0]
     #datasetDirectory = installDirectory + '/share/shape_learning/letter_model_datasets/uji_pen_chars2'
-    init_datasetDirectory = installDirectory + '/share/shape_learning/letter_model_datasets/alexis_set_for_children'
-    update_datasetDirectory = installDirectory + '/share/shape_learning/letter_model_datasets/alexis_set_for_children'
+    init_datasetDirectory = installDirectory + '/share/shape_learning/letter_model_datasets/new_dat'
+    update_datasetDirectory = installDirectory + '/share/shape_learning/letter_model_datasets/new_dat'
     demo_datasetDirectory = installDirectory + '/share/shape_learning/letter_model_datasets/diego_set'
     
     if not os.path.exists(init_datasetDirectory):

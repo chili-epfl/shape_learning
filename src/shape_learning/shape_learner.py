@@ -288,7 +288,7 @@ class ShapeLearner:
         5) updates the learned parameters as the algebric middle 
            between demonstrated parameters and curent learned parameters. 
         """
-        demo_shape = ShapeModeler.normaliseShapeHeight(numpy.array(shape))
+        demo_shape = ShapeModeler.normaliseShapeWidth(numpy.array(shape))
         
         # take the shape corresponding to the curent learned parameters in the curent space
         learned_shape = self.shapeModeler.makeShape(self.params)
@@ -300,6 +300,7 @@ class ShapeLearner:
         # re-compute parameters of the learned shape and the demo shape in the new PCA-space
         params_demo, _ = self.shapeModeler.decomposeShape(demo_shape)
         self.params, _ = self.shapeModeler.decomposeShape(learned_shape)
+        #d to get distance with clusters
         
         # learning :
         diff_params = params_demo - self.params

@@ -10,6 +10,7 @@ import os.path
 import numpy as np
 import matplotlib.pyplot as plt
 
+
 from kivy.config import Config
 Config.set('kivy', 'logger_enable', 0)
 Config.write()
@@ -17,6 +18,7 @@ Config.write()
 from kivy.app import App
 from kivy.uix.widget import Widget
 from kivy.graphics import Color, Ellipse, Line
+
 
 from scipy import interpolate
 
@@ -67,7 +69,8 @@ def downsampleShape(shape,numDesiredPoints,xyxyFormat=False):
 
 
 userShape = []
-userStroke = []
+lastStroke = []
+mainStroke = []
 class MyPaintWidget(Widget):
 
     def on_touch_down(self, touch):
@@ -79,39 +82,132 @@ class MyPaintWidget(Widget):
             touch.ud['line'] = Line(points=(touch.x, touch.y))
 
     def on_touch_move(self, touch):
-        global userShape
+        global lastStroke
         touch.ud['line'].points += [touch.x, touch.y]
-        userStroke += [touch.x, -touch.y]
+        lastStroke += [touch.x, -touch.y]
 
     def on_touch_up(self, touch):
-        global userStroke
+        global lastStroke
+        global mainStroke
+        global userShape
         touch.ud['line'].points
-        userShape.append(downsampleShape(userStroke,numPoints_shapeModeler,xyxyFormat=True))
-        userStroke = []
+
+        if mainStroke and (len(lastStroke) > 10):
+
+            # get the max of the usual distances between points :
+            x_shape = lastStroke[0::2]
+            y_shape = lastStroke[1::2]
+            x_zip = np.array(zip(x_shape[1:],x_shape[:-1]))
+            y_zip = np.array(zip(y_shape[1:],y_shape[:-1]))
+            dists = np.diff(x_zip)**2 + np.diff(y_zip)**2
+            dist_max = max(dists)
+
+            # starting point:
+            x1 = lastStroke[0]
+            y1 = lastStroke[1]
+            # ending point:
+            xn = lastStroke[-2]
+            yn = lastStroke[-1]
+
+            # check if the starting point is close enought to the main shape :
+            x_main = np.array(mainStroke[0::2])
+            y_main =  np.array(mainStroke[1::2])
+            if len(x_main)==len(y_main)+1:
+                x_main = x_main[:-1]
+            if len(y_main)==len(x_main)+1:
+                y_main = y_main[:-1]
+
+            start_dists = (x_main-x1)**2 + (y_main-y1)**2
+            dist_min_to_main = min(start_dists)
+            correction = dist_min_to_main <= 2*dist_max
+        
+            print dist_min_to_main
+            print dist_max
+            print "---"
+
+            independant_stroke = dist_min_to_main > 2*dist_max
+
+            if correction:
+
+                corrected_stroke = []
+
+                # find the indice where the main stroke is broken :
+                break_indice = np.argmin(start_dists)
+
+                if break_indice==0:
+                    corrected_stroke = lastStroke
+                    print 'bug : breakindice0'
+                else:
+                    shape_indice = break_indice*2
+                    corrected_stroke = mainStroke[0:shape_indice] + lastStroke
+
+                # check if the ending point is close enought to the main shape :
+                #x_main = np.array(mainStroke[0::2])
+                #y_main =  np.array(mainStroke[1::2])
+                end_dists = (x_main-xn)**2 + (y_main-yn)**2
+                dist_min_to_main = min(end_dists)
+                rejoining = dist_min_to_main <= 2*dist_max
+
+                if rejoining:
+
+                    print 'rejoining !!'
+                    # find the indice where the main stroke is rejoined :
+                    rejoin_indice = np.argmin(end_dists)
+                    print rejoin_indice
+
+                    if rejoin_indice < len(end_dists)-1:
+                        shape_indice = rejoin_indice*2 
+                        corrected_stroke += mainStroke[shape_indice:]
+
+                mainStroke = corrected_stroke
+
+            if independant_stroke:
+
+                # ignoring for the moment
+                print "new independant stroke, ignored !"
+
+
+            #userShape.append(downsampleShape(userStroke,numPoints_shapeModeler,xyxyFormat=True))
+            lastStroke = []
+
+        elif len(lastStroke) > 10:
+            mainStroke = lastStroke
+            lastStroke = []
 
         if touch.is_double_tap:
 
-            userShape = userShape[:-2]
+            #userShape.append(downsampleShape(mainStroke,numPoints_shapeModeler,xyxyFormat=True))
+            #userShape = userShape[:-2]
+
+            userShape = downsampleShape(mainStroke,numPoints_shapeModeler,xyxyFormat=True)
+            userShape = np.reshape(userShape, (-1, 1))
 
             shapeType = wordManager.shapeAtIndexInCurrentCollection(0)
 
+            """
             if shapeType in multi_stroke_letters:
-                """ Here manage multi_stroke_letters """
+                Here manage multi_stroke_letters
 
             else:
                 x1 = 
+            """
 
             print('Received demo')
 
+            '''
             for i in range(len(userShape)):
                 userShape[i] = np.reshape(userShape[i], (-1, 1)); #explicitly make it 2D array with only one column
+            '''
 
             # !!! shape.path is differnent now !
             shape = wordManager.respondToDemonstration(0, userShape)
             wordManager.save_all(0)
 
             userShape = []
-            self.canvas.remove(touch.ud['line'])
+            mainStroke = []
+            #self.canvas.remove(touch.ud['line'])
+            self.canvas.clear()
+            
             showShape(shape, 0)
 
 class UserInputCapture(App):
@@ -202,7 +298,7 @@ def showShape(shape, shapeIndex):
 if __name__ == "__main__":
     #parse arguments
     args = parser.parse_args()
-    wordToLearn = [args.word]
+    wordToLearn = args.word
 
     import inspect
     fileName = inspect.getsourcefile(ShapeModeler)

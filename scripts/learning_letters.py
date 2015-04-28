@@ -67,6 +67,107 @@ def downsampleShape(shape,numDesiredPoints,xyxyFormat=False):
 
     return shape
 
+def uniformize_xxyy(shape):
+
+    if len(shape)>2:
+        # comput length of the shape:
+        shape_length = 0
+        numPointsInShape = len(shape)/2
+        last_x = shape[0]
+        last_y = shape[numPointsInShape]
+        scale = [0]
+        for i in range(numPointsInShape-1):
+            x = shape[i + 1]
+            y = shape[i + numPointsInShape + 1]
+            last_x = shape[i]
+            last_y = shape[i + numPointsInShape]
+            shape_length += np.sqrt((x-last_x)**2 + (y-last_y)**2)
+            #last_x = x
+            #last_y = y
+            scale.append(shape_length)
+
+        # find new points:
+        new_shape_x = []
+        new_shape_y = []
+        step = shape_length/float(numPointsInShape)
+        biggest_smoller_point = 0
+        new_shape_x.append(shape[0])
+        new_shape_y.append(shape[numPointsInShape])
+        for i in 1+np.array(range(numPointsInShape)):
+            while i*step > scale[biggest_smoller_point]:
+                biggest_smoller_point += 1
+            biggest_smoller_point -= 1
+            x0 = shape[biggest_smoller_point]
+            y0 = shape[biggest_smoller_point+numPointsInShape]
+            x1 = shape[biggest_smoller_point+1]
+            y1 = shape[biggest_smoller_point+1+numPointsInShape]
+            diff = float(i*step-scale[biggest_smoller_point])
+            dist = float(scale[biggest_smoller_point+1]-scale[biggest_smoller_point])
+            new_x = x0 + diff*(x1-x0)/dist
+            new_y = y0 + diff*(y1-y0)/dist
+            new_shape_x.append(new_x)
+            new_shape_y.append(new_y)
+        new_shape_x.append(shape[numPointsInShape-1])
+        new_shape_y.append(shape[-1])
+
+        return new_shape_x + new_shape_y
+
+    else:
+        return shape
+
+
+
+def uniformize_xyxy(shape):
+
+    if len(shape)>2:
+        # comput length of the shape:
+        shape_length = 0
+        numPointsInShape = len(shape)/2
+        last_x = shape[0]
+        last_y = shape[1]
+        scale = [0]
+        for i in range(numPointsInShape-1):
+            x = shape[2*(i+1)]
+            y = shape[2*(i+1) + 1]
+            last_x = shape[2*i]
+            last_y = shape[2*i + 1]
+            shape_length += np.sqrt((x-last_x)**2 + (y-last_y)**2)
+            #last_x = x
+            #last_y = y
+            scale.append(shape_length)
+
+        # find new points:
+        new_shape = []
+        step = shape_length/float(numPointsInShape)
+        biggest_smoller_point = 0
+        new_shape.append(shape[0])
+        new_shape.append(shape[1])
+        for i in 1+np.array(range(numPointsInShape-1)):
+            while i*step > scale[biggest_smoller_point]:
+                biggest_smoller_point += 1
+            biggest_smoller_point -= 1
+
+            x0 = shape[2*biggest_smoller_point]
+            y0 = shape[2*biggest_smoller_point + 1]
+            x1 = shape[2*(biggest_smoller_point+1)]
+            y1 = shape[2*(biggest_smoller_point+1) + 1]
+            diff = float(i*step - scale[biggest_smoller_point])
+            dist = float(scale[biggest_smoller_point+1]-scale[biggest_smoller_point])
+            new_x = x0 + diff*(x1-x0)/dist
+            new_y = y0 + diff*(y1-y0)/dist
+            new_shape.append(new_x)
+            new_shape.append(new_y)
+
+        new_shape.append(shape[-2])
+        new_shape.append(shape[-1])
+
+        return new_shape
+
+    else:
+        return shape
+
+
+
 
 userShape = []
 lastStroke = []
@@ -91,6 +192,11 @@ class MyPaintWidget(Widget):
         global mainStroke
         global userShape
         touch.ud['line'].points
+        
+        print lastStroke
+        lastStroke = uniformize_xyxy(lastStroke)
+        print lastStroke
+        print "..........."
 
         if mainStroke and (len(lastStroke) > 10):
 
@@ -120,7 +226,7 @@ class MyPaintWidget(Widget):
             start_dists = (x_main-x1)**2 + (y_main-y1)**2
             dist_min_to_main = min(start_dists)
             correction = dist_min_to_main <= 2*dist_max
-        
+ 
             print dist_min_to_main
             print dist_max
             print "---"

@@ -457,8 +457,8 @@ class ShapeLearner:
         # learning, if good shape :
         diff_params = params_demo - self.params
         if accepted:
-            self.params = params_demo
-            #self.params += diff_params/2 #go towards the demonstrated shape
+            #self.params = params_demo
+            self.params += diff_params/2 #go towards the demonstrated shape
 
 
         #self.params[self.paramsToVary[0]-1] = params_demo[self.paramsToVary[0]-1] #ONLY USE FIRST PARAM

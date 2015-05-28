@@ -12,7 +12,8 @@ from copy import deepcopy
 import numpy
 
 from shape_modeler import ShapeModeler
-
+from stroke import Stroke
+import stroke
 
 # shape learning parameters
 
@@ -318,6 +319,159 @@ class ShapeLearner:
             #self.respondToFeedback(len(self.params_sorted)-3) # give feedback of most recent shape so bounds modify
         return self.shapeModeler.makeShape(self.params), self.params, params_demo
     
+    def respondToGoodDemonstration(self, shape):
+        """
+        will learn the demo only if it is close to the goal shape, the way it was drawn is important
+        return a number 0, 1 or 2:
+        0 = the demo shape has no meaning, not accepted
+        1 = the demo shape is close to the ref, but was not drawn in the good way
+        2 = the demo shape is close to the fer, accepted
+        """
+        """
+        Algo:
+        
+        1) takes the shape of the demonstration and check if it is good enought to be learned
+        
+        2) takes the curent learned shape
+        
+        3) re-performs PCA taking in account the domonstrated shape,
+           then obtains a new space with new eigen vectors
+           
+        4) projects demonstrated and learned shapes into this new space 
+           and gets their new parameters  
+           
+        5) updates the learned parameters as the algebric middle 
+           between demonstrated parameters and curent learned parameters. 
+        """
+        demo_shape = ShapeModeler.normaliseShapeWidth(numpy.array(shape))
+        reference = self.shapeModeler.getReference()
+
+        # create stroke from shape :
+        demo_stroke = Stroke()
+        demo_stroke.stroke_from_xxyy(numpy.reshape(demo_shape,len(demo_shape)))
+        demo_stroke.uniformize()
+        # create stroke from reference :
+        ref_stroke = Stroke()
+        ref_stroke.stroke_from_xxyy(reference)
+        ref_stroke.uniformize()
+        # get distance between demo and ref :
+        _,dist1 = stroke.euclidian_distance(demo_stroke,ref_stroke)
+        # get distance between demo and ref, modulo way and phase :
+        new_x,new_y,_,dist2,_,_ = stroke.best_aligment(demo_stroke,ref_stroke)
+        #demo_shape = numpy.concatenate((new_x,new_y),axis=0)
+        #demo_shape = numpy.reshape(demo_shape, (-1, 1))
+
+        response = 2
+
+        if dist2>0.3:
+            response = 0
+
+        if dist1>0.3 and dist2<=0.3:
+            response = 1
+
+        # take the shape corresponding to the curent learned parameters in the curent space
+        learned_shape = self.shapeModeler.makeShape(self.params)
+        
+        # if good shape, add the demo shape to the matrix for PCA and re-compute reference-shape params
+        if response==2:
+            self.shapeModeler.extendDataMat(demo_shape)
+        ref_params = self.shapeModeler.refParams
+        
+        # re-compute parameters of the learned shape and the demo shape in the new PCA-space
+        params_demo, _ = self.shapeModeler.decomposeShape(demo_shape)
+        self.params, _ = self.shapeModeler.decomposeShape(learned_shape)
+        #d to get distance with clusters
+        
+        # learning, if good shape :
+        diff_params = params_demo - self.params
+        if response==2:
+            self.params += diff_params/2 #go towards the demonstrated shape
+
+
+        #self.params[self.paramsToVary[0]-1] = params_demo[self.paramsToVary[0]-1] #ONLY USE FIRST PARAM
+        #store it as an attempt (this isn't super appropriate but whatever)
+        if (self.doGroupwiseComparison):
+            newParamValue = self.params[
+                self.paramsToVary[0] - 1, 0]  #USE ONLY FIRST PARAM FOR SELF-LEARNING ALGORITHM ATM
+            #print('Demo params: '+str(self.params))
+            bisect.insort(self.params_sorted, newParamValue)
+            self.shapeToParamsMapping.append(self.params)
+            #self.respondToFeedback(len(self.params_sorted)-3) # give feedback of most recent shape so bounds modify
+        return response, self.shapeModeler.makeShape(self.params), self.params, params_demo
+    
+    def respondToGoodDemonstration_modulo_phase(self, shape):
+        """
+        will learn the demo only if it is close to the goal shape, but no matter the way it was drawn
+        return a boolean that says if the stroke was accepted or not
+        """
+        """
+        Algo:
+        
+        1) takes the shape of the demonstration and check if it is good enought to be learned
+        
+        2) takes the curent learned shape
+        
+        3) re-performs PCA taking in account the domonstrated shape,
+           then obtains a new space with new eigen vectors
+           
+        4) projects demonstrated and learned shapes into this new space 
+           and gets their new parameters  
+           
+        5) updates the learned parameters as the algebric middle 
+           between demonstrated parameters and curent learned parameters. 
+        """
+        demo_shape = ShapeModeler.normaliseShapeWidth(numpy.array(shape))
+        reference = self.shapeModeler.getReference()
+
+        # create stroke from shape :
+        demo_stroke = Stroke()
+        demo_stroke.stroke_from_xxyy(numpy.reshape(demo_shape,len(demo_shape)))
+        demo_stroke.uniformize()
+        # create stroke from reference :
+        ref_stroke = Stroke()
+        ref_stroke.stroke_from_xxyy(reference)
+        ref_stroke.uniformize()
+        # get distance between demo and ref, modulo way and phase :
+        new_x,new_y,_,dist,_,_ = stroke.best_aligment(demo_stroke,ref_stroke)
+        demo_shape = numpy.concatenate((new_x,new_y),axis=0)
+        demo_shape = numpy.reshape(demo_shape, (-1, 1))
+
+        accepted = True
+
+        if dist>0.3:
+            accepted = False
+
+        # take the shape corresponding to the curent learned parameters in the curent space
+        learned_shape = self.shapeModeler.makeShape(self.params)
+        
+        # if good shape, add the demo shape to the matrix for PCA and re-compute reference-shape params
+        if accepted:
+            self.shapeModeler.extendDataMat(demo_shape)
+        ref_params = self.shapeModeler.refParams
+        
+        # re-compute parameters of the learned shape and the demo shape in the new PCA-space
+        params_demo, _ = self.shapeModeler.decomposeShape(demo_shape)
+        self.params, _ = self.shapeModeler.decomposeShape(learned_shape)
+        #d to get distance with clusters
+        
+        # learning, if good shape :
+        diff_params = params_demo - self.params
+        if accepted:
+            self.params = params_demo
+            #self.params += diff_params/2 #go towards the demonstrated shape
+
+
+        #self.params[self.paramsToVary[0]-1] = params_demo[self.paramsToVary[0]-1] #ONLY USE FIRST PARAM
+        #store it as an attempt (this isn't super appropriate but whatever)
+        if (self.doGroupwiseComparison):
+            newParamValue = self.params[
+                self.paramsToVary[0] - 1, 0]  #USE ONLY FIRST PARAM FOR SELF-LEARNING ALGORITHM ATM
+            #print('Demo params: '+str(self.params))
+            bisect.insort(self.params_sorted, newParamValue)
+            self.shapeToParamsMapping.append(self.params)
+            #self.respondToFeedback(len(self.params_sorted)-3) # give feedback of most recent shape so bounds modify
+        return accepted, self.shapeModeler.makeShape(self.params), self.params, params_demo
+
     def save_all(self):
         self.shapeModeler.save_all()
     

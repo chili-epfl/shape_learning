@@ -150,6 +150,49 @@ class ShapeLearnerManager:
             shapeLogger.info("%s: new generated model.       Params: %s. Path: %s" % (shape_messageFor, newParamValues.flatten().tolist(), newPath.flatten().tolist()))
             return shape
 
+    def respondToGoodDemonstration(self, shapeIndex_messageFor, shape):
+        shape_messageFor = self.shapeAtIndexInAllShapesLearnt(shapeIndex_messageFor)
+        if (shape_messageFor < 0 ):
+            shapeLogger.warning('Ignoring demonstration because not for valid shape type')
+            return -1
+        else:
+            response, newPath, newParamValues, params_demo = self.shapeLearners_currentCollection[shapeIndex_messageFor].respondToGoodDemonstration(shape)
+
+            shapeLogger.info("%s: new demonstration.         Params: %s. Path: %s" % (shape_messageFor, params_demo.flatten().tolist(), shape.flatten().tolist()))
+
+            paramsToVary = self.settings_shapeLearners_currentCollection[shapeIndex_messageFor].paramsToVary
+            # shape.path would be an array of paths
+            shape = Shape(path=newPath,
+                          shapeID=[], 
+                          shapeType=shape_messageFor,
+                          shapeType_code=shapeIndex_messageFor, 
+                          paramsToVary=paramsToVary, 
+                          paramValues=newParamValues)
+            shapeLogger.info("%s: new generated model.       Params: %s. Path: %s" % (shape_messageFor, newParamValues.flatten().tolist(), newPath.flatten().tolist()))
+            return shape, response
+
+    def respondToGoodDemonstration_modulo_phase(self, shapeIndex_messageFor, shape):
+        shape_messageFor = self.shapeAtIndexInAllShapesLearnt(shapeIndex_messageFor)
+        if (shape_messageFor < 0 ):
+            shapeLogger.warning('Ignoring demonstration because not for valid shape type')
+            return -1
+        else:
+            response, newPath, newParamValues, params_demo = self.shapeLearners_currentCollection[shapeIndex_messageFor].respondToGoodDemonstration_modulo_phase(shape)
+
+            shapeLogger.info("%s: new demonstration.         Params: %s. Path: %s" % (shape_messageFor, params_demo.flatten().tolist(), shape.flatten().tolist()))
+
+            paramsToVary = self.settings_shapeLearners_currentCollection[shapeIndex_messageFor].paramsToVary
+            # shape.path would be an array of paths
+            shape = Shape(path=newPath,
+                          shapeID=[], 
+                          shapeType=shape_messageFor,
+                          shapeType_code=shapeIndex_messageFor, 
+                          paramsToVary=paramsToVary, 
+                          paramValues=newParamValues)
+            shapeLogger.info("%s: new generated model.       Params: %s. Path: %s" % (shape_messageFor, newParamValues.flatten().tolist(), newPath.flatten().tolist()))
+            return shape, response
+
+
     def indexOfShapeInCurrentCollection(self, shapeType):
         try:
             shapeType_index = self.currentCollection.index(shapeType)

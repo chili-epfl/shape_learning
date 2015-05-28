@@ -149,6 +149,10 @@ class ShapeModeler:
         ndist = dist*dist/var
         return numpy.sum(ndist[:1])
 
+    def getReference(self):
+        """ gives the refence shape of the letter """
+        return self.dataMat[0]
+
     def getParameterVariances(self):
         """ Return the variances associated which each of the top principle components
         """

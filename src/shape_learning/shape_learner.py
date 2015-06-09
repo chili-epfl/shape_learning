@@ -34,6 +34,7 @@ SettingsStruct = recordtype('SettingsStruct',
                              'initDatasetFile',  #Path to the dataset file that will be used to initialize the matrix for PCA
                              'updateDatasetFiles',  #List of path -- or single path-- to dataset that will be updated with demo shapes
                              'paramFile', #Path to the dataset file 'params.dat' inside which we save the learned parameters
+                             'robotDataFiles', #List of path -- or single path-- to dataset that will be updated with robot tries
                              'paramsToVary',
                              #Natural number between 1 and number of parameters in the associated ShapeModeler, representing the parameter to learn
                              'doGroupwiseComparison',  #instead of pairwise comparison with most recent two shapes
@@ -57,6 +58,7 @@ class ShapeLearner:
         self.shapeModeler = ShapeModeler(init_filename=settings.initDatasetFile,
                                          update_filenames=settings.updateDatasetFiles,
                                          param_filename=settings.paramFile,
+                                         robot_filenames=settings.robotDataFiles,
                                          num_principle_components=self.numPrincipleComponents)
 
         self.bounds = settings.initialBounds
@@ -109,6 +111,12 @@ class ShapeLearner:
             self.newParamValue = self.bestParamValue
             self.params = [self.newParamValue]
 
+        return shape, self.params
+
+    ### ---------------------------------------- START FROM BASIC LINE OR LAST LEARNED SHAPE
+    def startFromScratch(self):
+        shape = self.shapeModeler.readStartingPoint()
+        self.params,_ = self.shapeModeler.decomposeShape(shape)
         return shape, self.params
 
     ### ---------------------------------------- START LEARNING - TRIANGULAR
@@ -310,13 +318,13 @@ class ShapeLearner:
 
         #self.params[self.paramsToVary[0]-1] = params_demo[self.paramsToVary[0]-1] #ONLY USE FIRST PARAM
         #store it as an attempt (this isn't super appropriate but whatever)
-        if (self.doGroupwiseComparison):
+        """if (self.doGroupwiseComparison):
             newParamValue = self.params[
                 self.paramsToVary[0] - 1, 0]  #USE ONLY FIRST PARAM FOR SELF-LEARNING ALGORITHM ATM
             #print('Demo params: '+str(self.params))
             bisect.insort(self.params_sorted, newParamValue)
             self.shapeToParamsMapping.append(self.params)
-            #self.respondToFeedback(len(self.params_sorted)-3) # give feedback of most recent shape so bounds modify
+            #self.respondToFeedback(len(self.params_sorted)-3) # give feedback of most recent shape so bounds modify"""
         return self.shapeModeler.makeShape(self.params), self.params, params_demo
     
     def respondToGoodDemonstration(self, shape):
@@ -379,6 +387,8 @@ class ShapeLearner:
         
         # re-compute parameters of the learned shape and the demo shape in the new PCA-space
         params_demo, _ = self.shapeModeler.decomposeShape(demo_shape)
+        print 'parameters of demo : '
+        print params_demo
         self.params, _ = self.shapeModeler.decomposeShape(learned_shape)
         #d to get distance with clusters
         
@@ -387,16 +397,15 @@ class ShapeLearner:
         if response==2:
             self.params += diff_params/2 #go towards the demonstrated shape
 
-
         #self.params[self.paramsToVary[0]-1] = params_demo[self.paramsToVary[0]-1] #ONLY USE FIRST PARAM
         #store it as an attempt (this isn't super appropriate but whatever)
-        if (self.doGroupwiseComparison):
+        """if (self.doGroupwiseComparison):
             newParamValue = self.params[
                 self.paramsToVary[0] - 1, 0]  #USE ONLY FIRST PARAM FOR SELF-LEARNING ALGORITHM ATM
             #print('Demo params: '+str(self.params))
             bisect.insort(self.params_sorted, newParamValue)
             self.shapeToParamsMapping.append(self.params)
-            #self.respondToFeedback(len(self.params_sorted)-3) # give feedback of most recent shape so bounds modify
+            #self.respondToFeedback(len(self.params_sorted)-3) # give feedback of most recent shape so bounds modify"""
         return response, self.shapeModeler.makeShape(self.params), self.params, params_demo
     
     def respondToGoodDemonstration_modulo_phase(self, shape):
@@ -438,7 +447,7 @@ class ShapeLearner:
 
         accepted = True
 
-        if dist>0.3:
+        if dist>0.4:
             accepted = False
 
         # take the shape corresponding to the curent learned parameters in the curent space
@@ -460,6 +469,14 @@ class ShapeLearner:
             #self.params = params_demo
             self.params += diff_params/2 #go towards the demonstrated shape
 
+            # check new generated shape :
+            new_shape = self.shapeModeler.makeShape(self.params)
+            new_stroke = Stroke()
+            new_stroke.stroke_from_xxyy(numpy.reshape(demo_shape,len(new_shape)))
+            _,dist1 = stroke.euclidian_distance(new_stroke,ref_stroke)
+
+            if dist1>0.4:
+                self.params = params_demo
 
         #self.params[self.paramsToVary[0]-1] = params_demo[self.paramsToVary[0]-1] #ONLY USE FIRST PARAM
         #store it as an attempt (this isn't super appropriate but whatever)
@@ -483,3 +500,6 @@ class ShapeLearner:
         for i in range(self.numPrincipleComponents):
              paramValue.append(-self.params[i][0])
         self.shapeModeler.save_params(paramValue, self.shape_learning)
+
+    def save_robot_try(self):
+        self.shapeModeler.save_robot_try(self.shapeModeler.makeShape(self.params).T)

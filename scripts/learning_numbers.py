@@ -95,7 +95,7 @@ class MyPaintWidget(Widget):
         print('Received demo for letter ' + shapeType)
 
         userShape = np.reshape(userShape, (-1, 1)); #explicitly make it 2D array with only one column
-        shape = wordManager.respondToDemonstration(shapeIndex_demoFor, userShape)
+        #shape = wordManager.respondToDemonstration(shapeIndex_demoFor, userShape)
         if shapeType in ['0','8','6']:
             shape,response = wordManager.respondToGoodDemonstration_modulo_phase(shapeIndex_demoFor, userShape)
             if response:
@@ -111,7 +111,9 @@ class MyPaintWidget(Widget):
             if response==2:
                 print 'good shape, accepted !'
         
-        wordManager.save_all(shapeIndex_demoFor)
+        #wordManager.save_all(shapeIndex_demoFor)
+        wordManager.save_robot_try(shapeIndex_demoFor)
+
         
 
         userShape = []
@@ -147,6 +149,7 @@ def generateSettings(shapeType):
     init_datasetFile = init_datasetDirectory + '/' + shapeType + '.dat'
     update_datasetFile = update_datasetDirectory + '/' + shapeType + '.dat'
     demo_datasetFile = demo_datasetDirectory + '/' + shapeType + '.dat'
+    robot_datasetFile = robot_datasetDirectory + '/' + shapeType + '.dat'
 
     if not os.path.exists(init_datasetFile):
         raise RuntimeError("Dataset not found for shape" + shapeType)
@@ -164,6 +167,13 @@ def generateSettings(shapeType):
                 pass
         except IOError:
                     raise RuntimeError("no writing permission for file"+demo_datasetFile)
+
+    if not os.path.exists(robot_datasetFile):
+        try:
+            with open(robot_datasetFile, 'w') as f:
+                pass
+        except IOError:
+                    raise RuntimeError("no writing permission for file"+robot_datasetFile)
 
     try:
         datasetParam = init_datasetDirectory + '/params.dat'
@@ -192,6 +202,7 @@ def generateSettings(shapeType):
                                 initDatasetFile = init_datasetFile,
                                 updateDatasetFiles = [update_datasetFile,demo_datasetFile],
                                 paramFile = datasetParam,
+                                robotDataFiles = [robot_datasetFile],
                                 initialBounds = initialBounds, 
                                 initialBounds_stdDevMultiples = initialBounds_stdDevMultiples,
                                 initialParamValue = initialParamValue, 
@@ -215,6 +226,7 @@ if __name__ == "__main__":
     init_datasetDirectory = installDirectory + '/share/shape_learning/letter_model_datasets/bad_letters'
     update_datasetDirectory = installDirectory + '/share/shape_learning/letter_model_datasets/bad_letters'
     demo_datasetDirectory = installDirectory + '/share/shape_learning/letter_model_datasets/diego_set'
+    robot_datasetDirectory = installDirectory + '/share/shape_learning/robot_tries/with_henry'
     
     if not os.path.exists(init_datasetDirectory):
         raise RuntimeError("initial dataset directory not found !")

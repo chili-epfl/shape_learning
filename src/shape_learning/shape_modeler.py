@@ -25,6 +25,7 @@ class ShapeModeler:
                  init_filename=None,
                  update_filenames=None,
                  param_filename=None,
+                 robot_filenames=None,
                  num_principle_components=10):
         """ Initialize a shape modeler
 
@@ -60,6 +61,9 @@ class ShapeModeler:
         if param_filename:
             self.param_filename = param_filename
 
+        if robot_filenames:
+            self.robot_filenames = robot_filenames
+
         if not isinstance(update_filenames,list):
                 self.update_filenames = [update_filenames]
 
@@ -81,7 +85,7 @@ class ShapeModeler:
             xn1 xn2 ... xnm yn1 yn2 ... ynm
 
         """
-        
+
         # scan the dataset :
         lines = []
         try: 
@@ -117,6 +121,38 @@ class ShapeModeler:
                 raise RuntimeError(
                     "Unable to read appropriate number of points from text file for shape " + str(i + 1))
             self.dataMat[i+1] = map(float, values)
+
+    def readStartingPoint(self):
+        """"""
+        # start_shape_line = ''
+        # open the starting-point :
+        try:
+            with open(self.robot_filenames[0], 'r') as f:
+                start_shape_line = f.readlines()[-1]
+                print self.robot_filenames[0]
+                print start_shape_line
+        except IOError:
+            raise RuntimeError("no reading permission for file"+self.robot_filenames[0])
+
+        start_shape_values = start_shape_line.split(' ')
+        try:
+            start_shape_values.remove('\n')
+        except ValueError:
+            pass
+        while True:
+            try:
+                start_shape_values.remove('')
+            except ValueError:
+                break
+        if not (len(start_shape_values) == self.numPointsInShapes * 2):
+            print start_shape_values
+            print len(start_shape_values)
+            print self.numPointsInShapes * 2
+            raise RuntimeError("Unappropriate starting shape format")
+        self.startShape = numpy.array(map(float, start_shape_values))
+        self.startShape = numpy.reshape(self.startShape, (-1, 1))
+        return self.startShape
+
 
     def performPCA(self):
         """ Calculate the top 'num_principle_components' principle components of
@@ -273,6 +309,21 @@ class ShapeModeler:
                             f.write('\n')
                 except IOError:
                     raise RuntimeError("no writing permission for file"+filename)
+
+    def save_robot_try(self,last_try):
+        """ save the curent learned shape of the robot into a new data set.
+        """
+        if self.robot_filenames:
+            filename = self.robot_filenames[0]
+            print('saving robot try in'+filename)
+            if not os.path.exists(filename):
+                raise RuntimeError("path to dataset"+filename+"not found")
+            try:
+                with open(filename, "a") as f:
+                    f.write(' '.join(map(str,last_try)).replace('[','').replace(']','').replace('\n',''))
+                    f.write('\n')
+            except IOError:
+                raise RuntimeError("no writing permission for file"+filename)
 
     def save_params(self, params, letter):
         """save parameters in new dataset

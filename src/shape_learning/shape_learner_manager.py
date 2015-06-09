@@ -52,6 +52,8 @@ class ShapeLearnerManager:
         self.currentCollection = ""
         self.collectionsLearnt = []
         self.nextShapeLearnerToBeStarted = 0
+        self.currentDemo = ""
+        self.currentLearn = ""
 
     def initialiseShapeLearners(self):
         self.shapeLearners_currentCollection = []
@@ -100,8 +102,8 @@ class ShapeLearnerManager:
                 [path, paramValues] = self.shapeLearners_currentCollection[shape_index].getLearnedShape()
                 shapeLogger.info("%s: continuing learning. Current params: %s. Path: %s" % (shapeType, paramValues.flatten().tolist(), path.flatten().tolist()))
             else:
-                [path, paramValues] = self.shapeLearners_currentCollection[shape_index].startLearning()
-                shapeLogger.info("%s: starting learning. Initial params: %s. Path: %s" % (shapeType, paramValues.flatten().tolist(), path.flatten().tolist()))
+                [path, paramValues] = self.shapeLearners_currentCollection[shape_index].startFromScratch()
+                #shapeLogger.info("%s: starting learning. Initial params: %s. Path: %s" % (shapeType, paramValues.flatten().tolist(), path.flatten().tolist()))
 
             paramsToVary = self.settings_shapeLearners_currentCollection[shape_index].paramsToVary
             self.nextShapeLearnerToBeStarted += 1
@@ -138,9 +140,9 @@ class ShapeLearnerManager:
             newPath, newParamValues, params_demo = self.shapeLearners_currentCollection[shapeIndex_messageFor].respondToDemonstration(shape)
 
             shapeLogger.info("%s: new demonstration.         Params: %s. Path: %s" % (shape_messageFor, params_demo.flatten().tolist(), shape.flatten().tolist()))
-
+            logger_str = "%s: new demonstration.         Params: %s. Path: %s" % (shape_messageFor, params_demo.flatten().tolist(), shape.flatten().tolist())     
+            self.currentDemo = logger_str
             paramsToVary = self.settings_shapeLearners_currentCollection[shapeIndex_messageFor].paramsToVary
-            # shape.path would be an array of paths
             shape = Shape(path=newPath,
                           shapeID=[], 
                           shapeType=shape_messageFor,
@@ -148,6 +150,8 @@ class ShapeLearnerManager:
                           paramsToVary=paramsToVary, 
                           paramValues=newParamValues)
             shapeLogger.info("%s: new generated model.       Params: %s. Path: %s" % (shape_messageFor, newParamValues.flatten().tolist(), newPath.flatten().tolist()))
+            logger_str = "%s: new generated model.       Params: %s. Path: %s" % (shape_messageFor, newParamValues.flatten().tolist(), newPath.flatten().tolist())           
+            self.currentLearn = logger_str            
             return shape
 
     def respondToGoodDemonstration(self, shapeIndex_messageFor, shape):
@@ -307,6 +311,13 @@ class ShapeLearnerManager:
         else:
             self.shapeLearners_currentCollection[shapeIndex_messageFor].save_demo()
 
+    def save_robot_try(self, shapeIndex_messageFor):
+        shape_messageFor = self.shapeAtIndexInAllShapesLearnt(shapeIndex_messageFor)
+        if (shape_messageFor < 0):
+            shapeLogger.warning('Ignoring demonstration because not for valid shape type')
+            return -1
+        else:
+            self.shapeLearners_currentCollection[shapeIndex_messageFor].save_robot_try()
 
     def save_params(self, shapeIndex_messageFor):
         shape_messageFor = self.shapeAtIndexInAllShapesLearnt(shapeIndex_messageFor)

@@ -9,7 +9,7 @@ Overview
 
 Python dependencies:
 ```
-scipy, recordtype, sklearn
+matplotlib, scipy, recordtype, sklearn
 ```
 
 Shape modelling

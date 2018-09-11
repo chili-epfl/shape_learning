@@ -9,7 +9,7 @@ Overview
 
 Python dependencies:
 ```
-enum, scipy, recordtype
+enum, scipy, recordtype, sklearn
 ```
 
 Shape modelling

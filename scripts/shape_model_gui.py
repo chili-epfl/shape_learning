@@ -73,7 +73,7 @@ def prepareShapeModel(datasetDirectory, shape):
     datasetFiles_shape = glob.glob(datasetDirectory + '/'+shape+'.dat')
     if(len(datasetFiles_shape)<1):
         raise Exception("Dataset not available at " + datasetDirectory + " for shape " + shape)
-    shapeModeler = ShapeModeler(filename = datasetFiles_shape[0], num_principle_components = numParams)
+    shapeModeler = ShapeModeler(init_filename = datasetFiles_shape[0], num_principle_components = numParams)
     #import pdb; pdb.set_trace()
     return shapeModeler
 

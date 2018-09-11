@@ -11,7 +11,7 @@ from copy import deepcopy
 
 import numpy
 
-from shape_modeler import ShapeModeler
+from shape_learning.shape_modeler import ShapeModeler
 
 
 # shape learning parameters
@@ -115,7 +115,7 @@ class ShapeLearner:
         self.bounds = startingBounds
 
         #make initial shape
-        [shape, paramValues] = self.shapeModeler.makeRandomShapeFromriangular(self.params, self.paramsToVary,
+        [shape, paramValues] = self.shapeModeler.makeRandomShapeFromTriangular(self.params, self.paramsToVary,
                                                                               self.bounds, startingParamValues)
         self.params = paramValues
         self.bestParamValue = paramValues[
@@ -178,7 +178,7 @@ class ShapeLearner:
         #code in place of feedback from user: go towards goal parameter value
         goalParamValue = numpy.float64(0) #-1.5*parameterVariances[self.paramToVary-1]
         goalParamsValue = numpy.zeros((self.numPrincipleComponents, 1))
-        goalParamsValue[self.paramToVary - 1, 0] = goalParamValue
+        goalParamsValue[self.paramsToVary - 1, 0] = goalParamValue
         if (self.doGroupwiseComparison):
             errors = numpy.ndarray.tolist(abs(self.shapeToParamsMapping - goalParamsValue))
             bestShape_idx = errors.index(min(errors))
@@ -216,11 +216,11 @@ class ShapeLearner:
             if ( bestShape == 'new' ):  #new shape is better
                 worstParamValue = self.bestParamValue
                 bestParamValue = self.newParamValue
-                self.params[self.paramToVary - 1, 0] = bestParamValue
+                self.params[self.paramsToVary - 1, 0] = bestParamValue
             else:  #new shape is worse
                 worstParamValue = self.newParamValue
                 bestParamValue = self.bestParamValue
-                self.params[self.paramToVary - 1, 0] = bestParamValue
+                self.params[self.paramsToVary - 1, 0] = bestParamValue
 
             if ( worstParamValue == min(self.bestParamValue, self.newParamValue) ):  #shape with lower value is worse
                 self.bounds[0] = worstParamValue  #increase min bound to worst so we don't try any lower

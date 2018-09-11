@@ -9,7 +9,7 @@ which represent letters, and the collections represent words.
 import logging; shapeLogger = logging.getLogger("shape_logger")
 import os.path
 
-from shape_learner import ShapeLearner
+from shape_learning.shape_learner import ShapeLearner
 from recordtype import recordtype  # for mutable namedtuple (dict might also work)
 
 
